@@ -29,7 +29,7 @@
       <?php echo __('Folder name for') . ' "' . $collection->name . '"';?>
     </label>
     <div class="inputs">
-      <?php echo __v()->formText($id, $collection_folders[$collection->id], NULL);?>
+      <?php echo __v()->formText($id, $collection_names[$collection->id], NULL);?>
     </div>
   </div>
 <?php }?>
@@ -47,14 +47,13 @@
 </div>
 <div class="field">
   <label for="archive_repertory_item_identifier_prefix">
-    <?php echo __('Identifier prefix used for items');?>
+    <?php echo __('Prefix of item identifiers to use');?>
   </label>
   <div class="inputs">
     <?php echo __v()->formText('archive_repertory_item_identifier_prefix', get_option('archive_repertory_item_identifier_prefix'), null);?>
     <p class="explanation">
-      <?php echo __('The name of folder of each new item will be the Dublin Core identifier.') . '<br />';
-      echo __('If this identifier does not exists, the Omeka item id will be used.') . '<br />';
-      echo __('If an item has more than one identifier, this option allows to select the prefixed identifier to use, for example "item:" or "isbn:".') . '<br />';?>
+      <?php echo __('The name of folder of each new item will be the sanitized Dublin Core identifier with the selected prefix, for example "item:", "record:" or "doc:". Let empty to use simply teh first item identifier.') . '<br />';
+      echo __('If this identifier does not exists, the Omeka item id will be used.') . '<br />';?>
     </p>
   </div>
 </div>

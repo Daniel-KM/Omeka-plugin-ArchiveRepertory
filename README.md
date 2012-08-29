@@ -16,53 +16,11 @@ For more information on Omeka, see [Omeka][1].
 Installation
 ------------
 
-Installs it like any other Omeka plugin.
+Installs it like any other Omeka plugin, then follows the config instructions.
 
 Current release is compatible with Omeka 1.5.3, but a little patch should be
-applied on two files of Omeka core, waiting for its official integration.
-
-Here are the two modifications:
-
-* /application/libraries/Omeka/File/Derivative/Image.php line 231
-
-Change:
-
-    protected static function _getFileName($archiveFilename)
-    {
-      $filename = basename($archiveFilename);
-      $newName = explode('.', $filename);
-      //ensures that all generated files are jpeg
-      $newName[1] = self::DERIVATIVE_EXT;
-      return implode('.', $newName);
-    }
-
-with:
-
-    protected static function _getFileName($archiveFilename)
-    {
-      // Ensures that all generated files are jpeg.
-      $base = pathinfo($archiveFilename, PATHINFO_FILENAME);
-      return $base . '.' . self::DERIVATIVE_EXT;
-    }
-
-* /application/models/File.php line 131
-
-Change:
-
-    public function getDerivativeFilename()
-    {
-      list($base, $ext) = explode('.', $this->archive_filename);
-      $fn = $base . '.' . Omeka_File_Derivative_Image::DERIVATIVE_EXT;
-      return $fn;
-    }
-
-with:
-
-    public function getDerivativeFilename()
-    {
-      $base = substr($this->archive_filename, 0, strrpos($this->archive_filename, '.'));
-      return $base . '.' . Omeka_File_Derivative_Image::DERIVATIVE_EXT;
-    }
+applied on two files of Omeka core, waiting for its official integration. For
+more information, see the commit [set_derivative_filename][7].
 
 
 Warning
@@ -127,14 +85,14 @@ Current maintainers:
 
 * Daniel Berthereau (see [Daniel_KM][5])
 
-First version of this plugin has been build for École des Ponts ParisTech
+First version of this plugin has been built for École des Ponts ParisTech
 (see [ENPC][6]).
 
 
 Copyright
 ---------
 
-Copyright © 2012 Daniel Berthereau for École des Ponts ParisTech
+Copyright Daniel Berthereau for École des Ponts ParisTech, 2012
 
 
 [1]: http://www.omeka.org "Omeka.org"
@@ -143,3 +101,4 @@ Copyright © 2012 Daniel Berthereau for École des Ponts ParisTech
 [4]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL"
 [5]: http://github.com/Daniel-KM "Daniel_KM"
 [6]: http://bibliotheque.enpc.fr "École des Ponts ParisTech"
+[7]: https://github.com/Daniel-KM/Omeka/commit/f2ac2f50f3219973a228ecc2db52a676a852e743 "commit set_derivative_filename"

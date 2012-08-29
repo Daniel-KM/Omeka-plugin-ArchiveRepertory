@@ -1,9 +1,9 @@
 <?php
 /**
  * @version $Id$
- * @copyright Copyright (c) 2012 Daniel Berthereau for École des Ponts ParisTech
- * @license http://www.gnu.org/licenses/gpl-3.0.txt
+ * @copyright Daniel Berthereau for École des Ponts ParisTech, 2012
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+ * @license http://www.gnu.org/licenses/gpl-3.0.txt
  * @package ArchiveRepertory
  */
 
@@ -13,29 +13,36 @@
  * @see README.md
  * @see config_form.php
  *
- * TODO Checks names of folders and files and appends item or file id if needed.
- * TODO Extends the collection class with the folder name and with settings.
- * TODO Adds a field or an element for folder of the item?
- * TODO Manages old files when collection folder or identifier change.
- * TODO Choice to use only the item id for the name of item folder.
+ * @todo Checks names of folders and files and appends item or file id if needed.
+ * @todo Extends the collection class with the folder name and with settings.
+ * @todo Adds a field or an element for folder of the item?
+ * @todo Manages old files when collection folder change.
+ * @todo Choice to use only the item id for the name of item folder.
+ * @todo Adds tests.
  *
  * Technical notes
- * The process is divided into two sub-processes, and two hooks are used:
+ * Three reasons force the division of the process.
+ * 1. The process is divided into two sub-processes, so two hooks are used:
  * - before_insert_file(): strict rename of files inside temporary directory;
  * - after_save_item(): move files inside collection item subfolders of archive.
- * This choice of implementation allows to bypass the storage constraint too
+ * 2. This choice of implementation allows to bypass the storage constraint too
  * (File_ProcessUploadJob::perform()).
+ * 3. Process order is different when one item is imported via "Add content" and
+ * when plugin CsvImport is used. So we need to use a third hook between
+ * previous ones:
+ * - after_insert_file(): like after_save_item(), but used when files are
+ * inserted after item (in CsvImport).
+ * Hooks before_insert_file() and after_insert_file() are needed, because
+ * creation of derivatives with true name should be separate of moving file in
+ * the archive folder.
  */
 
-/** Plugin version number */
-define('ARCHIVE_REPERTORY_PLUGIN_VERSION', get_plugin_ini('ArchiveRepertory', 'version'));
-
 /** Installation of the plugin. */
-$archiverepertory = new ArchiveRepertoryPlugin();
-$archiverepertory->setUp();
+$archiveRepertory = new ArchiveRepertoryPlugin();
+$archiveRepertory->setUp();
 
 /**
- * Contains code used to integrate Archive Repertory into Omeka.
+ * Contains code used to integrate the plugin into Omeka.
  *
  * @package ArchiveRepertory
  */
@@ -50,52 +57,47 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     'after_insert_collection',
     'after_save_item',
     'before_insert_file',
+    'before_save_file',
+    'after_delete_file',
   );
 
-  protected $_filters = array(
+  protected $_options = array(
+    'archive_repertory_add_collection_folder' => TRUE,
+    'archive_repertory_collection_folders' => NULL,
+    'archive_repertory_add_item_folder' => TRUE,
+    'archive_repertory_item_identifier_prefix' => 'item:',
+    'archive_repertory_keep_original_filename' => TRUE,
   );
 
   /**
-   * Installs the Archive Repertory plugin.
+   * Installs the plugin.
    */
-  public static function hookInstall()
+  public function hookInstall()
   {
-    set_option('archive_repertory_add_collection_folder', (int) TRUE);
-    set_option('archive_repertory_add_item_folder', (int) TRUE);
-    set_option('archive_repertory_item_identifier_prefix', 'item:');
-    set_option('archive_repertory_keep_original_filename', (int) TRUE);
+    $this->_installOptions();
 
     // Set default names of collection folders. Folders are created by config.
-    $collection_folders = unserialize(get_option('archive_repertory_collection_folders'));
-    if ($collection_folders === FALSE) {
-      $collection_folders = array();
-      set_option('archive_repertory_collection_folders', serialize($collection_folders));
-    }
+    $collection_names = array();
     $collections = get_collections(array(), 100000);
     foreach ($collections as $collection) {
-      if (!isset($collection_folders[$collection->id])) {
-        $collection_folders[$collection->id] = self::_createCollectionFolderName($collection);
-      }
+      $collection_names[$collection->id] = $this->_createCollectionDefaultName($collection);
+
       // Names should be saved immediately to avoid side effects if other
       // similar names are created.
-      set_option('archive_repertory_collection_folders', serialize($collection_folders));
+      set_option('archive_repertory_collection_folders', serialize($collection_names));
     }
   }
 
   /**
-   * Uninstalls the Archive Repertory plugin.
+   * Uninstalls the plugin.
    */
-  public static function hookUninstall()
+  public function hookUninstall()
   {
-    delete_option('archive_repertory_add_collection_folder');
-    delete_option('archive_repertory_add_item_folder');
-    delete_option('archive_repertory_item_identifier_prefix');
-    delete_option('archive_repertory_keep_original_filename');
-    delete_option('archive_repertory_collection_folders');
+    $this->_uninstallOptions();
   }
 
   /**
-   * Warns before the uninstallation of the Archive Repertory plugin.
+   * Warns before the uninstallation of the plugin.
    */
   public static function hookAdminAppendToPluginUninstallMessage()
   {
@@ -108,10 +110,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   /**
    * Shows plugin configuration page.
    */
-  public static function hookConfigForm()
+  public function hookConfigForm()
   {
     $collections = get_collections(array(), 100000);
-    $collection_folders = unserialize(get_option('archive_repertory_collection_folders'));
+    $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
 
     include('config_form.php');
   }
@@ -121,26 +123,26 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
    *
    * @param array Options set in the config form.
    */
-  public static function hookConfig($post)
+  public function hookConfig($post)
   {
     // Save settings.
     set_option('archive_repertory_add_collection_folder', (int) (boolean) $post['archive_repertory_add_collection_folder']);
     set_option('archive_repertory_add_item_folder', (int) (boolean) $post['archive_repertory_add_item_folder']);
-    set_option('archive_repertory_item_identifier_prefix', trim($post['archive_repertory_item_identifier_prefix']));
+    set_option('archive_repertory_item_identifier_prefix', $this->_sanitizeString($post['archive_repertory_item_identifier_prefix']));
     set_option('archive_repertory_keep_original_filename', (int) (boolean) $post['archive_repertory_keep_original_filename']);
 
     $collections = get_collections(array(), 10000);
-    $collection_folders = unserialize(get_option('archive_repertory_collection_folders'));
+    $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
     foreach ($collections as $collection) {
       $id = 'archive_repertory_collection_folder_' . $collection->id;
-      $collection_folders[$collection->id] = trim($post[$id], '/\\');
+      $collection_names[$collection->id] = $this->_sanitizeString(trim($post[$id], ' /\\'));
     }
-    set_option('archive_repertory_collection_folders', serialize($collection_folders));
+    set_option('archive_repertory_collection_folders', serialize($collection_names));
 
     // Create collection folders if needed.
     if (get_option('archive_repertory_add_collection_folder')) {
-      foreach ($collection_folders as $folder) {
-        $result = self::_createPathsInArchive($folder);
+      foreach ($collection_names as $folder) {
+        $result = $this->_createArchiveFolders($folder);
       }
     }
   }
@@ -154,86 +156,54 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
    *
    * @return void.
    */
-  public static function hookAfterInsertCollection($collection)
+  public function hookAfterInsertCollection($collection)
   {
     // Create the collection folder name.
-    $collection_folders = unserialize(get_option('archive_repertory_collection_folders'));
-    if (!isset($collection_folders[$collection->id])) {
-      $collection_folders[$collection->id] = self::_createCollectionFolderName($collection);
-      set_option('archive_repertory_collection_folders', serialize($collection_folders));
+    $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
+    if (!isset($collection_names[$collection->id])) {
+      $collection_names[$collection->id] = $this->_createCollectionDefaultName($collection);
+      set_option('archive_repertory_collection_folders', serialize($collection_names));
     }
 
     // Create collection folder.
     if (get_option('archive_repertory_add_collection_folder')) {
-      $result = self::_createPathsInArchive($collection_folders[$collection->id]);
+      $result = $this->_createArchiveFolders($collection_names[$collection->id]);
     }
   }
 
   /**
    * Manages folders for attached files of items.
    */
-  public static function hookAfterSaveItem($item)
+  public function hookAfterSaveItem($item)
   {
     // Check if file is at the right place, with collection and item folders.
-    $collection_folder = self::_getCollectionFolderName($item);
-    $item_folder = self::_getItemFolderName($item);
-    $folder = $collection_folder . $item_folder;
-    // Create path if needed.
-    $result = self::_createPathsInArchive($folder);
+    $archiveFolder = $this->_getArchiveFolderName($item);
 
+    // Check if files are already attached and if they are at the right place.
     $files = $item->getFiles();
     foreach ($files as $file) {
-      $new_filename = $folder . basename($file->archive_filename);
-
-      // Move file is it'is not in the right place.
-      if ($file->archive_filename != $new_filename) {
-        // Memorize old path in order to remove old folders at end of process.
-        $oldpath = dirname($file->archive_filename);
-
-        // Check and move original file using Omeka API.
-        $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => FILES_DIR));
-        $operation->move($file->archive_filename, $new_filename);
-
-        // Check and move derivative files using Omeka API.
-        $derivative_filename = $file->getDerivativeFilename();
-        foreach (array(
-            FULLSIZE_DIR,
-            THUMBNAIL_DIR,
-            SQUARE_THUMBNAIL_DIR,
-          ) as $path) {
-          $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => $path));
-          $operation->move($derivative_filename, $folder . basename($derivative_filename));
+      // Move file only if it is not in the right place.
+      $newFilename = $archiveFolder . basename($file->archive_filename);
+      if ($file->archive_filename != $newFilename) {
+        if (!$this->_moveFilesInArchive($file->archive_filename, $file->getDerivativeFilename(), $archiveFolder)) {
+          throw new Exception(__('Cannot move files inside archive directory.'));
         }
 
-        // Update file in Omeka database.
-        $file->archive_filename = $new_filename;
+        // Update file in Omeka database immediately for each file.
+        $file->archive_filename = $newFilename;
+        // As it's not a file hook, the file is not automatically saved.
         $file->save();
-
-        // Remove all old empty folders.
-        if ($oldpath  != '.') {
-          foreach (array(
-              FILES_DIR,
-              FULLSIZE_DIR,
-              THUMBNAIL_DIR,
-              SQUARE_THUMBNAIL_DIR,
-            ) as $path) {
-            $fullpath = $path . DIRECTORY_SEPARATOR . $oldpath;
-            if (realpath($path) != realpath($fullpath)) {
-              self::removeFolder($fullpath);
-            }
-          }
-        }
       }
     }
   }
 
   /**
-   * Manages name of an attached file before saving it.
+   * Manages strict renaming of a file before saving it.
    */
-  public static function hookBeforeInsertFile($file)
+  public function hookBeforeInsertFile($file)
   {
-    // Rename file if desired and needed.
     if (get_option('archive_repertory_keep_original_filename')) {
+      // Rename file if desired and needed.
       $new_filename = basename($file->original_filename);
       if ($file->archive_filename != $new_filename) {
         $operation = new Omeka_Storage_Adapter_Filesystem(array(
@@ -250,6 +220,66 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   }
 
   /**
+   * Manages moving of an attached file after saving it.
+   *
+   * Files are already renamed in hookBeforeInsertFile(). Here, they are moved.
+   */
+  public function hookBeforeSaveFile($file)
+  {
+    // Rename file only if desired.
+    if (!get_option('archive_repertory_keep_original_filename')) {
+      return;
+    }
+
+    // Check if file is already attached, so we can check folder name.
+    if (empty($file->item_id)) {
+      return;
+    }
+
+    $archiveFolder = $this->_getArchiveFolderName(get_item_by_id($file->item_id));
+
+    // Move file only if it is not in the right place...
+    $newFilename = $archiveFolder . basename($file->archive_filename);
+    if (($file->archive_filename != $newFilename)
+        // and if it's already in the archive folder...
+        && is_file(FILES_DIR . DIRECTORY_SEPARATOR . basename($file->archive_filename))
+        // and not in subfolder.
+        && (basename($file->archive_filename) == $file->archive_filename)
+      ) {
+      if (!$this->_moveFilesInArchive($file->archive_filename, $file->getDerivativeFilename(), $archiveFolder)) {
+        throw new Exception(__('Cannot move files inside archive directory.'));
+      }
+
+      // Update file in database (automatically done in this hook).
+      $file->archive_filename = $newFilename;
+    }
+  }
+
+  /**
+   * Manages deletion of folder of a file is removed.
+   */
+  public function hookAfterDeleteFile($file)
+  {
+    $archiveFolder = $this->_getArchiveFolderName(get_item_by_id($file->item_id));
+    $result = $this->_removeArchiveFolders($archiveFolder);
+    return TRUE;
+  }
+
+  /**
+   * Gets archive folder name of an item, that depends on activation of options.
+   *
+   * @param object $item
+   *
+   * @return string Unique and sanitized name folder name of the item.
+   */
+  private function _getArchiveFolderName($item)
+  {
+    $collection_folder = $this->_getCollectionFolderName($item);
+    $item_folder = $this->_getItemFolderName($item);
+    return $collection_folder . $item_folder;
+  }
+
+  /**
    * Creates the default name for a collection folder.
    *
    * Default name is the first word of the collection name. The id is added if
@@ -259,26 +289,26 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
    *
    * @return string Unique sanitized name of the collection.
    */
-  private function _createCollectionFolderName($collection)
+  private function _createCollectionDefaultName($collection)
   {
-    $collection_folders = unserialize(get_option('archive_repertory_collection_folders'));
-    if ($collection_folders === FALSE) {
-      $collection_folders = array();
+    $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
+    if ($collection_names === FALSE) {
+      $collection_names = array();
     }
     else {
       // Remove the current collection id to simplify check.
-      unset($collection_folders[$collection->id]);
+      unset($collection_names[$collection->id]);
     }
 
     // Default name is the first word of the collection name.
     $default_name = trim(strtok(trim($collection->name), " \n\r\t"));
 
     // If this name is already used, the id is added until name is unique.
-    While (in_array($default_name, $collection_folders)) {
+    While (in_array($default_name, $collection_names)) {
       $default_name .= '_' . $collection->id;
     }
 
-    return self::_sanitizeString($default_name);
+    return $this->_sanitizeString($default_name);
   }
 
   /**
@@ -291,9 +321,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   private function _getCollectionFolderName($item)
   {
     // Collection folder is created when the module is installed and configured.
-    $collection_folders = unserialize(get_option('archive_repertory_collection_folders'));
+    $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
     if (get_option('archive_repertory_add_collection_folder') && ($item->collection_id !== NULL)) {
-      $collection = $collection_folders[$item->collection_id];
+      $collection = $collection_names[$item->collection_id];
       if ($collection != '') {
         $collection .= DIRECTORY_SEPARATOR;
       }
@@ -308,9 +338,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   /**
    * Creates a unique name for an item folder.
    *
-   * Default name is the Dublin Core identifier if it's unique. If there isn't
-   * any identifier, the item id is used. If there are multiple identifier, the
-   * first with the prefix will be used.
+   * Default name is the Dublin Core identifier with the selected prefix. If
+   * there isn't any identifier with the prefix, the item id will be used.
+   * The name is sanitized and the selected prefix is removed.
    *
    * @param object $item
    *
@@ -319,48 +349,19 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   private function _createItemFolderName($item)
   {
     $identifiers = item('Dublin Core', 'Identifier', array('all' => TRUE), $item);
-    switch (count($identifiers)) {
-      case 0:
-        $item_identifier = (string) $item->id;
-        break;
-
-      case 1:
-        if ($identifiers[0] == '') {
-          $item_identifier = (string) $item->id;
-        }
-        else {
-          $prefix = get_option('archive_repertory_item_identifier_prefix');
-          $prefix_len = strlen($prefix);
-          $item_identifier = (substr($identifiers[0], 0, $prefix_len) == $prefix) ?
-              // Remove prefix
-              substr($identifiers[0], $prefix_len) :
-              $identifiers[0];
-          $item_identifier = self::_sanitizeString($item_identifier);
-        }
-        break;
-
-      default:
-        $prefix = get_option('archive_repertory_item_identifier_prefix');
-        if ($prefix == '') {
-          if ($identifiers[0] == '') {
-            $item_identifier = (string) $item->id;
-          }
-          else {
-            $item_identifier = self::_sanitizeString($identifiers[0]);
-          }
-        }
-        else {
-          $prefix_len = strlen($prefix);
-          $filtered_identifiers = array_values(array_filter($identifiers, function ($identifier) use ($prefix, $prefix_len) { return (substr($identifier, 0, $prefix_len) == $prefix); } ));
-          $item_identifier = (isset($filtered_identifiers[0])) ?
-              substr($filtered_identifiers[0], $prefix_len) :
-              $identifiers[0];
-          $item_identifier = self::_sanitizeString($item_identifier);
-        }
-        break;
+    if (!count($identifiers)) {
+      return (string) $item->id;
     }
 
-    return $item_identifier;
+    $prefix = get_option('archive_repertory_item_identifier_prefix');
+    $prefix_len = strlen($prefix);
+    $filtered_identifiers = array_values(array_filter($identifiers, function ($identifier) use ($prefix, $prefix_len) { return (substr($identifier, 0, $prefix_len) == $prefix); } ));
+    if (!isset($filtered_identifiers[0])) {
+      return (string) $item->id;
+    }
+
+    $item_identifier = substr($filtered_identifiers[0], $prefix_len);
+    return $this->_sanitizeString($item_identifier);
   }
 
   /**
@@ -374,7 +375,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   {
     // No item folder.
     if (get_option('archive_repertory_add_item_folder')) {
-      return self::_createItemFolderName($item) . DIRECTORY_SEPARATOR;
+      return $this->_createItemFolderName($item) . DIRECTORY_SEPARATOR;
     }
 
     return '';
@@ -383,23 +384,110 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
   /**
    * Checks if the folders exist in the archive repertory, then creates them.
    *
-   * @param string $folder Name of the folder to create, without archive_dir.
+   * @param string $archiveFolder Name of folder to create, without archive_dir.
    *
    * @return boolean True if the path is created, Exception if an error occurs.
    */
-  private function _createPathsInArchive($folder)
+  private function _createArchiveFolders($archiveFolder)
   {
-    if ($folder != '') {
+    if ($archiveFolder != '') {
       foreach (array(
           FILES_DIR,
           FULLSIZE_DIR,
           THUMBNAIL_DIR,
           SQUARE_THUMBNAIL_DIR,
         ) as $path) {
-        $fullpath = $path . DIRECTORY_SEPARATOR . $folder;
-        $result = self::createFolder($fullpath);
+        $fullpath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
+        $result = $this->createFolder($fullpath);
       }
     }
+    return TRUE;
+  }
+
+  /**
+   * Removes empty folders in the archive repertory.
+   *
+   * @param string $archiveFolder Name of folder to delete, without archive_dir.
+   *
+   * @return boolean True if the path is created, Exception if an error occurs.
+   */
+  private function _removeArchiveFolders($archiveFolder)
+  {
+    if (($archiveFolder != '.')
+        && ($archiveFolder != '..')
+        && ($archiveFolder != DIRECTORY_SEPARATOR)
+        && ($archiveFolder != '')
+      ) {
+      foreach (array(
+          FILES_DIR,
+          FULLSIZE_DIR,
+          THUMBNAIL_DIR,
+          SQUARE_THUMBNAIL_DIR,
+        ) as $path) {
+        $fullpath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
+        if (realpath($path) != realpath($fullpath)) {
+          $this->removeFolder($fullpath);
+        }
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Moves, without renaming, a file and derivative files inside archive folder.
+   *
+   * New folders are created if needed. Old folders are removed if empty.
+   * No update of the database is done.
+   *
+   * @param string $archiveFilename
+   *   Name of the archive file to move.
+   * @param string $derivativeFilename
+   *   Name of the derivative files to move, because it can be different and it
+   *   can't be determined inside this helper.
+   * @param string $archiveFolder
+   *   Name of the folder, finishing with the directory separator, where to move
+   *   files, without archive_dir, usually "collection/dc:identifier" when this
+   *   plugin is enabled.
+   *
+   * @return boolean
+   *   TRUE if files are moved, else FALSE.
+   */
+  private function _moveFilesInArchive($archiveFilename, $derivativeFilename, $archiveFolder)
+  {
+    if ($archiveFilename == '' || $derivativeFilename == '' || $archiveFolder == '') {
+      return FALSE;
+    }
+
+    // Move file only if it is not in the right place.
+    $newArchiveFilename = $archiveFolder . basename($archiveFilename);
+    if ($archiveFilename == $newArchiveFilename) {
+      return TRUE;
+    }
+
+    // Create path if needed.
+    $result = $this->_createArchiveFolders($archiveFolder);
+
+    // Move original file using Omeka API.
+    $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => FILES_DIR));
+    $operation->move($archiveFilename, $newArchiveFilename);
+
+    // Move derivative files using Omeka API.
+    $newDerivativeFilename = $archiveFolder . basename($derivativeFilename);
+    foreach (array(
+        FULLSIZE_DIR,
+        THUMBNAIL_DIR,
+        SQUARE_THUMBNAIL_DIR,
+      ) as $path) {
+      $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => $path));
+      $operation->move($derivativeFilename, $newDerivativeFilename);
+    }
+
+    // Remove all old empty folders.
+    $oldFolder = dirname($archiveFilename);
+    if ($oldFolder != $newFolder) {
+      $this->_removeArchiveFolders($oldFolder);
+    }
+
     return TRUE;
   }
 
@@ -449,7 +537,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     if (file_exists($path)
         && is_dir($path)
         && is_readable($path)
-        && (count(@scandir($path)) == 2)
+        && (count(@scandir($path)) == 2) // Only '.' and '..'.
         && is_writable($path)
       ) {
       @rmdir($path);
@@ -469,7 +557,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     $string = preg_replace('#\&([A-Za-z])(?:uml|circ|tilde|acute|grave|cedil|ring)\;#', '\1', $string);
     $string = preg_replace('#\&([A-Za-z]{2})(?:lig)\;#', '\1', $string);
     $string = preg_replace('#\&[^;]+\;#', '_', $string);
-    $string = preg_replace('/[^[:alnum:]\-_\(\)\[\]]/', '_', $string);
+    $string = preg_replace('/[^[:alnum:]\(\)\[\]_\-\.#~@+:]/', '_', $string);
     return preg_replace('/_+/', '_', $string);
   }
 }
