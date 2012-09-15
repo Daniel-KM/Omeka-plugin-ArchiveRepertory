@@ -52,7 +52,7 @@
     <div class="inputs">
         <?php echo __v()->formText('archive_repertory_item_identifier_prefix', get_option('archive_repertory_item_identifier_prefix'), null);?>
         <p class="explanation">
-            <?php echo __('The name of folder of each new item will be the sanitized Dublin Core identifier with the selected prefix, for example "item:", "record:" or "doc:". Let empty to use simply teh first item identifier.') . '<br />';
+            <?php echo __('The name of folder of each new item will be the sanitized Dublin Core identifier with the selected prefix, for example "item:", "record:" or "doc:". Let empty to use simply the first item identifier.') . '<br />';
             echo __('If this identifier does not exists, the Omeka item id will be used.') . '<br />';?>
         </p>
     </div>

@@ -78,7 +78,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
 
         // Set default names of collection folders. Folders are created by config.
         $collection_names = array();
-        $collections = get_collections(array(), 100000);
+        $collections = get_collections(array(), 10000);
         foreach ($collections as $collection) {
             $collection_names[$collection->id] = $this->_createCollectionDefaultName($collection);
 
@@ -112,7 +112,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     public function hookConfigForm()
     {
-        $collections = get_collections(array(), 100000);
+        $collections = get_collections(array(), 10000);
         $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
 
         include('config_form.php');
@@ -222,7 +222,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     /**
      * Manages moving of an attached file after saving it.
      *
-     * Files are already renamed in hookBeforeInsertFile(). Here, they are moved.
+     * Files are already renamed in hookBeforeInsertFile(). Here they are moved.
      */
     public function hookBeforeSaveFile($file)
     {
@@ -256,7 +256,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     }
 
     /**
-     * Manages deletion of folder of a file is removed.
+     * Manages deletion of the folder of a file when this file is removed.
      */
     public function hookAfterDeleteFile($file)
     {
@@ -321,8 +321,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     private function _getCollectionFolderName($item)
     {
         // Collection folder is created when the module is installed and configured.
-        $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
         if (get_option('archive_repertory_add_collection_folder') && ($item->collection_id !== NULL)) {
+            $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
             $collection = $collection_names[$item->collection_id];
             if ($collection != '') {
                 $collection .= DIRECTORY_SEPARATOR;
@@ -349,7 +349,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
     private function _createItemFolderName($item)
     {
         $identifiers = item('Dublin Core', 'Identifier', array('all' => TRUE), $item);
-        if (!count($identifiers)) {
+        if (empty($identifiers)) {
             return (string) $item->id;
         }
 
@@ -373,7 +373,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     private function _getItemFolderName($item)
     {
-        // No item folder.
         if (get_option('archive_repertory_add_item_folder')) {
             return $this->_createItemFolderName($item) . DIRECTORY_SEPARATOR;
         }
