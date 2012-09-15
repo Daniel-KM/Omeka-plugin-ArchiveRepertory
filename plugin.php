@@ -37,10 +37,6 @@
  * the archive folder.
  */
 
-/** Installation of the plugin. */
-$archiveRepertory = new ArchiveRepertoryPlugin();
-$archiveRepertory->setUp();
-
 /**
  * Contains code used to integrate the plugin into Omeka.
  *
@@ -78,7 +74,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
 
         // Set default names of collection folders. Folders are created by config.
         $collection_names = array();
-        $collections = get_collections(array(), 10000);
+        // get_collections() is not available in controller.
+        $collections = get_db()->getTable('Collection')->findBy(array(), 10000);
         foreach ($collections as $collection) {
             $collection_names[$collection->id] = $this->_createCollectionDefaultName($collection);
 
@@ -131,7 +128,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
         set_option('archive_repertory_item_identifier_prefix', $this->_sanitizeString($post['archive_repertory_item_identifier_prefix']));
         set_option('archive_repertory_keep_original_filename', (int) (boolean) $post['archive_repertory_keep_original_filename']);
 
-        $collections = get_collections(array(), 10000);
+        // get_collections() is not available in controller.
+        $collections = get_db()->getTable('Collection')->findBy(array(), 10000);
         $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
         foreach ($collections as $collection) {
             $id = 'archive_repertory_collection_folder_' . $collection->id;
@@ -236,7 +234,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
             return;
         }
 
-        $archiveFolder = $this->_getArchiveFolderName(get_item_by_id($file->item_id));
+        // get_item_by_id() is not available in controller.
+        $item = get_db()->getTable('Item')->find($file->item_id);
+        $archiveFolder = $this->_getArchiveFolderName($item);
 
         // Move file only if it is not in the right place...
         $newFilename = $archiveFolder . basename($file->archive_filename);
@@ -260,7 +260,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     public function hookAfterDeleteFile($file)
     {
-        $archiveFolder = $this->_getArchiveFolderName(get_item_by_id($file->item_id));
+        // get_item_by_id() is not available in controller.
+        $item = get_db()->getTable('Item')->find($file->item_id);
+        $archiveFolder = $this->_getArchiveFolderName($item);
         $result = $this->_removeArchiveFolders($archiveFolder);
         return TRUE;
     }
@@ -348,6 +350,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     private function _createItemFolderName($item)
     {
+        // item() or itemMetadata() are not available in controller, so we need
+        // to load all helpers to get all Dublin Core identifiers of the item.
+        require_once HELPERS;
         $identifiers = item('Dublin Core', 'Identifier', array('all' => TRUE), $item);
         if (empty($identifiers)) {
             return (string) $item->id;
@@ -560,3 +565,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
         return preg_replace('/_+/', '_', $string);
     }
 }
+
+/** Installation of the plugin. */
+$archiveRepertory = new ArchiveRepertoryPlugin();
+$archiveRepertory->setUp();
