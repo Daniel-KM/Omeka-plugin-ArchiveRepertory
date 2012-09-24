@@ -63,6 +63,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
         'archive_repertory_add_item_folder' => TRUE,
         'archive_repertory_item_identifier_prefix' => 'item:',
         'archive_repertory_keep_original_filename' => TRUE,
+        'archive_repertory_base_original_filename' => TRUE,
     );
 
     /**
@@ -127,6 +128,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
         set_option('archive_repertory_add_item_folder', (int) (boolean) $post['archive_repertory_add_item_folder']);
         set_option('archive_repertory_item_identifier_prefix', $this->_sanitizeString($post['archive_repertory_item_identifier_prefix']));
         set_option('archive_repertory_keep_original_filename', (int) (boolean) $post['archive_repertory_keep_original_filename']);
+        set_option('archive_repertory_base_original_filename', (int) (boolean) $post['archive_repertory_base_original_filename']);
 
         // get_collections() is not available in controller.
         $collections = get_db()->getTable('Collection')->findBy(array(), 10000);
@@ -200,8 +202,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     public function hookBeforeInsertFile($file)
     {
+        // Rename file only if desired and needed.
         if (get_option('archive_repertory_keep_original_filename')) {
-            // Rename file if desired and needed.
             $new_filename = basename($file->original_filename);
             if ($file->archive_filename != $new_filename) {
                 $operation = new Omeka_Storage_Adapter_Filesystem(array(
@@ -210,9 +212,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
                 ));
                 $operation->move($file->archive_filename, $new_filename);
 
-                // Update file in database (automatically done because it's a hook).
+                // Update file name in database (automatically done because it's
+                // a hook).
                 $file->archive_filename = $new_filename;
-                $file->original_filename = $new_filename;
             }
         }
     }
@@ -221,6 +223,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      * Manages moving of an attached file after saving it.
      *
      * Files are already renamed in hookBeforeInsertFile(). Here they are moved.
+     * Original file name can be cleaned too (user can choose to keep base name
+     * only).
      */
     public function hookBeforeSaveFile($file)
     {
@@ -232,6 +236,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
         // Check if file is already attached, so we can check folder name.
         if (empty($file->item_id)) {
             return;
+        }
+
+        if (get_option('archive_repertory_base_original_filename')) {
+            $file->original_filename = basename($file->original_filename);
         }
 
         // get_item_by_id() is not available in controller.

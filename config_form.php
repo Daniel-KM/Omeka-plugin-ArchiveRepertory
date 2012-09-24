@@ -72,3 +72,18 @@
     </p>
     </div>
 </div>
+<div class="field">
+    <label for="archive_repertory_base_original_filename">
+        <?php echo __('Keep only base of original name of attached files');?>
+    </label>
+    <div class="inputs">
+    <?php echo __v()->formCheckbox('archive_repertory_base_original_filename', TRUE,
+    array('checked' => (boolean) get_option('archive_repertory_base_original_filename')));?>
+    <p class="explanation">
+        <?php echo __('If checked, Omeka will keep only base of original filenames, not their path. This option depends on the previous one.') . '<br />';
+            echo '<strong>' . __('Warning') . '</strong>:</br>';
+            echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
+        ?>
+    </p>
+    </div>
+</div>
