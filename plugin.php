@@ -71,7 +71,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     public function hookInstall()
     {
-        $this->_installOptions();
+        self::_installOptions();
 
         // Set default names of collection folders. Folders are created by config.
         $collection_names = array();
@@ -91,7 +91,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      */
     public function hookUninstall()
     {
-        $this->_uninstallOptions();
+        self::_uninstallOptions();
     }
 
     /**
