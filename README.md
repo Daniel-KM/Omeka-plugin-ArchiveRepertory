@@ -16,7 +16,9 @@ For more information on Omeka, see [Omeka][1].
 Installation
 ------------
 
-Installs it like any other Omeka plugin, then follows the config instructions.
+Uncompress files and rename plugin folder "ArchiveRepertory".
+
+Then install it like any other Omeka plugin and follow the config instructions.
 
 Current release is compatible with Omeka 1.5.3, but a little patch should be
 applied on two files of Omeka core, waiting for its official integration. For
@@ -42,7 +44,7 @@ License
 
 This plugin is published with a double licence:
 
-* CeCILL (see [CeCILL][3])
+### [CeCILL][3]
 
 In consideration of access to the source code and the rights to copy,
 modify and redistribute granted by the license, users are provided only
@@ -62,7 +64,7 @@ security. This Agreement may be freely reproduced and published,
 provided it is not altered, and that no provisions are either added or
 removed herefrom.
 
-* GNU/GPL (see [GNU/GPL][4])
+### [GNU/GPL][4]
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -93,7 +95,7 @@ First version of this plugin has been built for École des Ponts ParisTech
 Copyright
 ---------
 
-Copyright Daniel Berthereau for École des Ponts ParisTech, 2012
+* Copyright Daniel Berthereau for École des Ponts ParisTech, 2012
 
 
 [1]: http://www.omeka.org "Omeka.org"

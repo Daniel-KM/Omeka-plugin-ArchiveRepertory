@@ -185,7 +185,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
             // Move file only if it is not in the right place.
             $newFilename = $archiveFolder . basename($file->archive_filename);
             if ($file->archive_filename != $newFilename) {
-                if (!$this->_moveFilesInArchive($file->archive_filename, $file->getDerivativeFilename(), $archiveFolder)) {
+                if (!$this->_moveFilesInArchive($file->archive_filename, $file->getDerivativeFilename(), $archiveFolder, $file->has_derivative_image)) {
                     throw new Exception(__('Cannot move files inside archive directory.'));
                 }
 
@@ -254,7 +254,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
                 // and not in subfolder.
                 && (basename($file->archive_filename) == $file->archive_filename)
             ) {
-            if (!$this->_moveFilesInArchive($file->archive_filename, $file->getDerivativeFilename(), $archiveFolder)) {
+            if (!$this->_moveFilesInArchive($file->archive_filename, $file->getDerivativeFilename(), $archiveFolder, $file->has_derivative_image)) {
                 throw new Exception(__('Cannot move files inside archive directory.'));
             }
 
@@ -460,11 +460,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
      *   Name of the folder, finishing with the directory separator, where to move
      *   files, without archive_dir, usually "collection/dc:identifier" when this
      *   plugin is enabled.
+     * @param boolean $hasDerivativeImage
+     *   Move derivative images too, if any.
      *
      * @return boolean
      *   TRUE if files are moved, else FALSE.
      */
-    private function _moveFilesInArchive($archiveFilename, $derivativeFilename, $archiveFolder)
+    private function _moveFilesInArchive($archiveFilename, $derivativeFilename, $archiveFolder, $hasDerivativeImage)
     {
         if ($archiveFilename == '' || $derivativeFilename == '' || $archiveFolder == '') {
             return FALSE;
@@ -483,15 +485,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
         $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => FILES_DIR));
         $operation->move($archiveFilename, $newArchiveFilename);
 
-        // Move derivative files using Omeka API.
-        $newDerivativeFilename = $archiveFolder . basename($derivativeFilename);
-        foreach (array(
-                FULLSIZE_DIR,
-                THUMBNAIL_DIR,
-                SQUARE_THUMBNAIL_DIR,
-            ) as $path) {
-            $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => $path));
-            $operation->move($derivativeFilename, $newDerivativeFilename);
+        // If any, move derivative files using Omeka API.
+        if ($hasDerivativeImage) {
+            $newDerivativeFilename = $archiveFolder . basename($derivativeFilename);
+            foreach (array(
+                    FULLSIZE_DIR,
+                    THUMBNAIL_DIR,
+                    SQUARE_THUMBNAIL_DIR,
+                ) as $path) {
+                // Check if the derivative file exists or not to avoid some
+                // errors when moving.
+                if (file_exists($path . DIRECTORY_SEPARATOR . $derivativeFilename)) {
+                    $operation = new Omeka_Storage_Adapter_Filesystem(array('localDir' => $path));
+                    $operation->move($derivativeFilename, $newDerivativeFilename);
+                }
+            }
         }
 
         // Remove all old empty folders.
