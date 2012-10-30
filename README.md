@@ -10,6 +10,9 @@ This plugin allows to keep original names of imported files and put them in a
 hierarchical structure (collection / item / files) in order to get readable urls
 for files and to avoid an overloading of the file server.
 
+Note: this plugin does not use the storage system of Zend/Omeka and modifies
+only the archive file name.
+
 For more information on Omeka, see [Omeka][1].
 
 
@@ -99,7 +102,7 @@ Copyright
 
 
 [1]: http://www.omeka.org "Omeka.org"
-[2]: https://github.com/Daniel-KM/ArchiveRepertory "GitHub ArchiveRepertory"
+[2]: https://github.com/Daniel-KM/ArchiveRepertory/Issues "GitHub ArchiveRepertory"
 [3]: http://www.cecill.info/licences/Licence_CeCILL_V2-en.html "CeCILL"
 [4]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL"
 [5]: http://github.com/Daniel-KM "Daniel_KM"

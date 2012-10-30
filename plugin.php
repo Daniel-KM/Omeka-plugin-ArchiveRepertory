@@ -366,15 +366,37 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_Abstract
             return (string) $item->id;
         }
 
-        $prefix = get_option('archive_repertory_item_identifier_prefix');
-        $prefix_len = strlen($prefix);
-        $filtered_identifiers = array_values(array_filter($identifiers, function ($identifier) use ($prefix, $prefix_len) { return (substr($identifier, 0, $prefix_len) == $prefix); } ));
+        // Get all identifiers with the chosen prefix in case they are multiple.
+        $filtered_identifiers = array_values(array_filter($identifiers, 'self::_filteredIdentifier'));
         if (!isset($filtered_identifiers[0])) {
             return (string) $item->id;
         }
 
-        $item_identifier = substr($filtered_identifiers[0], $prefix_len);
+        // Keep only the first identifier with the configured prefix.
+        $prefix = get_option('archive_repertory_item_identifier_prefix');
+        $item_identifier = substr($filtered_identifiers[0], strlen($prefix));
         return $this->_sanitizeString($item_identifier);
+    }
+
+    /**
+     * Check if an identifier of an item begins with the configured prefix.
+     *
+     * @param string $identifier
+     *   Identifier to check.
+     *
+     * @return boolean
+     *   True if identifier begins with the prefix, false else.
+     */
+    private function _filteredIdentifier($identifier) {
+        static $prefix;
+        static $prefix_len;
+
+        if ($prefix === null) {
+            $prefix = get_option('archive_repertory_item_identifier_prefix');
+            $prefix_len = strlen($prefix);
+        }
+
+        return (substr($identifier, 0, $prefix_len) == $prefix);
     }
 
     /**
