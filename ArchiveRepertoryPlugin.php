@@ -19,6 +19,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected $_hooks = array(
         'install',
+        'upgrade',
         'uninstall',
         'config_form',
         'config',
@@ -34,7 +35,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected $_options = array(
         'archive_repertory_add_collection_folder' => TRUE,
         'archive_repertory_collection_folders' => NULL,
-        'archive_repertory_add_item_folder' => TRUE,
+        'archive_repertory_item_folder' => 'id',
         'archive_repertory_item_identifier_prefix' => 'document:',
         'archive_repertory_keep_original_filename' => TRUE,
         'archive_repertory_base_original_filename' => TRUE,
@@ -74,6 +75,22 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Upgrades the plugin.
+     */
+    public function hookUpgrade($args)
+    {
+        $oldVersion = $args['old_version'];
+        $newVersion = $args['new_version'];
+
+        if (version_compare($oldVersion, '2.3', '<')) {
+            set_option('archive_repertory_item_folder', (get_option('archive_repertory_add_item_folder')
+                ? 'Dublin Core:Identifier'
+                : 'None'));
+            delete_option('archive_repertory_add_item_folder');
+        }
+    }
+
+    /**
      * Uninstalls the plugin.
      */
     public function hookUninstall()
@@ -90,6 +107,23 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         set_loop_records('collections', $collections);
         $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
 
+        $item_folder = get_option('archive_repertory_item_folder');
+        // TODO To simplify with the direct function.
+        // Get only Dublin Core elements for select form.
+        $listElements = get_db()->getTable('Element')->findPairsForSelectForm(array('item_type_id' => null));
+        // It's more sustainable to memorize true name than an internal code
+        // and it's simpler to get the normal order.
+        $elements = get_db()->getTable('Element')->findBySet('Dublin Core');
+        foreach ($elements as $element) {
+            foreach ($listElements['Dublin Core'] as $key => $name) {
+                if ($element->id == $key) {
+                    $listElements['Dublin Core:' . $element->name] = $name;
+                    unset($listElements[$key]);
+                }
+            }
+        }
+        unset($listElements['Dublin Core']);
+
         require 'config_form.php';
     }
 
@@ -104,7 +138,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Save settings.
         set_option('archive_repertory_add_collection_folder', (int) (boolean) $post['archive_repertory_add_collection_folder']);
-        set_option('archive_repertory_add_item_folder', (int) (boolean) $post['archive_repertory_add_item_folder']);
+        set_option('archive_repertory_item_folder', $post['archive_repertory_item_folder']);
         set_option('archive_repertory_item_identifier_prefix', $this->_sanitizeString($post['archive_repertory_item_identifier_prefix']));
         set_option('archive_repertory_keep_original_filename', (int) (boolean) $post['archive_repertory_keep_original_filename']);
         set_option('archive_repertory_base_original_filename', (int) (boolean) $post['archive_repertory_base_original_filename']);
@@ -339,7 +373,26 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Creates a unique name for an item folder.
+     * Creates a unique name for an item folder from first metadata.
+     *
+     * If there isn't any identifier with the prefix, the item id will be used.
+     * The name is sanitized.
+     *
+     * @param object $item
+     * @param array|string $metadata
+     *
+     * @return string Unique sanitized name of the item.
+     */
+    private function _createItemFolderName($item, $metadata)
+    {
+        $identifier = metadata($item, $metadata, 0);
+        return empty($identifier)
+            ? (string) $item->id
+            : $this->_sanitizeString($identifier);
+    }
+
+    /**
+     * Creates a unique name for an item folder from Dublin Core identifier.
      *
      * Default name is the Dublin Core identifier with the selected prefix. If
      * there isn't any identifier with the prefix, the item id will be used.
@@ -349,7 +402,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique sanitized name of the item.
      */
-    private function _createItemFolderName($item)
+    private function _createItemFolderNameFromDCidentifier($item)
     {
         $identifiers = metadata($item, array('Dublin Core', 'Identifier'), 'all');
         if (empty($identifiers)) {
@@ -399,11 +452,22 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     private function _getItemFolderName($item)
     {
-        if (get_option('archive_repertory_add_item_folder')) {
-            return $this->_createItemFolderName($item) . DIRECTORY_SEPARATOR;
+        $item_folder = get_option('archive_repertory_item_folder');
+        switch ($item_folder) {
+            // This case is a common exception.
+            case 'Dublin Core:Identifier':
+                return $this->_createItemFolderNameFromDCidentifier($item) . DIRECTORY_SEPARATOR;
+            case 'id':
+                return (string) $item->id . DIRECTORY_SEPARATOR;
+            case 'None':
+            case '':
+                return '';
+            default:
+                return $this->_createItemFolderName($item, array(
+                    substr($item_folder, 0, strrpos($item_folder, ':')),
+                    substr($item_folder, strrpos($item_folder, ':') + 1),
+                )) . DIRECTORY_SEPARATOR;
         }
-
-        return '';
     }
 
     /**

@@ -42,26 +42,38 @@
 </fieldset>
 <fieldset id="fieldset-items"><legend><?php echo __('Items'); ?></legend>
     <div class="field">
-        <label for="archive_repertory_add_item_folder">
-            <?php echo __('Add a folder for each item'); ?>
-        </label>
-        <div class="inputs">
-        <?php echo get_view()->formCheckbox('archive_repertory_add_item_folder', TRUE,
-            array('checked' => (boolean) get_option('archive_repertory_add_item_folder'))); ?>
+        <div id="archive_repertory_item_folder-label">
+            <label for="archive_repertory_item_folder">
+                <?php echo __('How do you want to name your item folder, if any?'); ?>
+            </label>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will add subfolders for each item in the "files" folder, for example "files/original/unique_identifier/". Names of these subfolders will be sanitized. New files will be stored inside them.') . '<br />'; ?>
+                <?php echo __('If you choose to add a folder, Omeka will add subfolders for each item in "files" folders, for example "files/original/unique_identifier/".');
+                echo ' ' . __('Names of these subfolders will be sanitized. New files will be stored inside them. Old files will be moved when item will be updated.') . '<br />' . PHP_EOL;
+                echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
+                echo ' ' . __('So recommended ids are "Dublin Core identifier" and "Internal item id".') . '<br />';
+                echo __('If this identifier does not exists, the Omeka internal item id will be used.'); ?>
             </p>
+        </div>
+        <div>
+            <select name="archive_repertory_item_folder" id="archive_repertory_item_folder">
+                <option value="None"<?php if ($item_folder == 'None') { echo ' selected="selected"';} ?>><?php echo __("Don't add folder"); ?></option>
+                <option value="id"<?php if ($item_folder == 'id') { echo ' selected="selected"';} ?>><?php echo __('Internal item id'); ?></option>
+                <?php foreach ($listElements as $key => $value) {
+                    echo '<option value="' . $key . '"';
+                    if ($item_folder == $key) { echo ' selected="selected"';}
+                    echo '>' . 'Dublin Core' . ' : ' . $value . '</option>' . PHP_EOL;
+                } ?>
+            </select>
         </div>
     </div>
     <div class="field">
         <label for="archive_repertory_item_identifier_prefix">
-            <?php echo __('Prefix of item identifiers to use'); ?>
+            <?php echo __('Prefix of item Dublin Core identifier to use'); ?>
         </label>
         <div class="inputs">
             <?php echo get_view()->formText('archive_repertory_item_identifier_prefix', get_option('archive_repertory_item_identifier_prefix'), null); ?>
             <p class="explanation">
-                <?php echo __('The name of folder of each new item will be the sanitized Dublin Core identifier with the selected prefix, for example "item:", "record:" or "doc:". Let empty to use simply the first item identifier.') . '<br />';
-                echo __('If this identifier does not exists, the Omeka item id will be used.') . '<br />'; ?>
+                <?php echo __('If you choose to use the Dublin Core id, the name of folder of each new item will be the sanitized Dublin Core identifier with the selected prefix, for example "item:", "record:" or "doc:". Let empty to use simply the first item identifier.'); ?>
             </p>
         </div>
     </div>
@@ -76,8 +88,8 @@
             array('checked' => (boolean) get_option('archive_repertory_keep_original_filename'))); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep original filenames.') . '<br />';
-                    echo '<strong>' . __('Warning') . '</strong>:</br>';
-                    echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
+                echo '<strong>' . __('Warning') . '</strong>:</br>';
+                echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
                 ?>
             </p>
         </div>
@@ -91,8 +103,8 @@
             array('checked' => (boolean) get_option('archive_repertory_base_original_filename'))); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep only base of original filenames, not their path. This option depends on the previous one.') . '<br />';
-                    echo '<strong>' . __('Warning') . '</strong>:</br>';
-                    echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
+                echo '<strong>' . __('Warning') . '</strong>:</br>';
+                echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
                 ?>
             </p>
         </div>
