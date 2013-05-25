@@ -25,7 +25,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'config',
         'after_save_collection',
         'after_save_item',
-        'before_save_file',
+        'after_save_file',
         'after_delete_file',
     );
 
@@ -46,7 +46,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @var array
      */
-    static private $_pathsByType = array(
+    static private $_archivePathsByType = array(
         'original' => 'original',
         'fullsize' => 'fullsize',
         'thumbnail' => 'thumbnails',
@@ -198,9 +198,14 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $files = $item->getFiles();
         foreach ($files as $file) {
             // Move file only if it is not in the right place.
+            // We don't use original filename here, because this is managed in
+            // hookAfterSavefile() when the file is inserted.
             $newFilename = $archiveFolder . basename($file->filename);
             if ($file->filename != $newFilename) {
-                $result = $this->_moveFilesInArchive($file->filename, $file->getDerivativeFilename(), $archiveFolder, $file->has_derivative_image);
+                $result = $this->_moveFilesInArchiveSubfolders(
+                    $file->filename,
+                    $newFilename,
+                    $this->_getDerivativeExtension($file));
                 if (!$result) {
                     throw new Exception(__('Cannot move files inside archive directory.'));
                 }
@@ -214,79 +219,67 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Manages moving of an attached file before saving it.
+     * Moves/renames an attached file just at the end of the save process.
      *
      * Original file name can be cleaned too (user can choose to keep base name
      * only).
-     *
-     * Technical notes
-     * The process is divided into two times:
-     * - strict renaming of files when file is inserted;
-     * - moving files inside collection and item subfolders.
-     * This process order is needed, because the process is different when one
-     * item is imported via "Add content" and when plugin CsvImport is used.
-     * This choice of implementation allows to bypass the storage constraint too
-     * (File_ProcessUploadJob::perform()) and to manage creation of derivatives.
      */
-    public function hookBeforeSaveFile($args)
+    public function hookAfterSaveFile($args)
     {
         $post = $args['post'];
         $file = $args['record'];
 
-        // Files are renamed to their original name during insert.
-        if ($args['insert']) {
-            // Rename file only if wanted and needed.
-            if (get_option('archive_repertory_keep_original_filename')) {
-                $new_filename = basename($file->original_filename);
-
-                if ($file->filename != $new_filename) {
-                    $operation = new Omeka_Storage_Adapter_Filesystem(array(
-                        'localDir' => sys_get_temp_dir(),
-                        'webDir' => sys_get_temp_dir(),
-                    ));
-                    $operation->move($file->filename, $new_filename);
-
-                    // Update file name in database (automatically done because
-                    // it's a hook).
-                    $file->filename = $new_filename;
-                }
-            }
-        }
-        // After every record save, files are moved to their folder if needed.
-        else {
-            // Keep only basename of original filename in metadata if wanted.
-            if (get_option('archive_repertory_base_original_filename')) {
-                $file->original_filename = basename($file->original_filename);
-            }
-
-            // Rename file only if wanted.
-            if (!get_option('archive_repertory_keep_original_filename')) {
-                return;
-            }
-
+        // Files can't be moved during insert, because has_derivative is set
+        // just after it. Of course, this can be bypassed, but we don't.
+        if (!$args['insert']) {
             // Check if file is already attached, so we can check folder name.
             if (empty($file->item_id)) {
                 return;
             }
 
-            $item = $file->getItem();
-            $archiveFolder = $this->_getArchiveFolderName($item);
-            // Move file only if it is not in the right place...
-            $newFilename = $archiveFolder . basename($file->filename);
+            // Memorize current filenames.
+            $file_filename = $file->filename;
+            $file_original_filename = $file->original_filename;
 
-            if (($file->filename != $newFilename)
-                    // and if it's already in the archive folder...
-                    && is_file(FILES_DIR . DIRECTORY_SEPARATOR . self::$_pathsByType['original'] . DIRECTORY_SEPARATOR . basename($file->filename))
-                    // and not in subfolder.
-                    && (basename($file->filename) == $file->filename)
+            // Keep only basename of original filename in metadata if wanted.
+            if (get_option('archive_repertory_base_original_filename')) {
+                $file->original_filename = basename($file->original_filename);
+            }
+
+            // Rename file only if wanted and needed...
+            if (get_option('archive_repertory_keep_original_filename')
+                    // and if main file is already in the archive folder.
+                    && is_file(FILES_DIR . DIRECTORY_SEPARATOR . self::$_archivePathsByType['original'] . DIRECTORY_SEPARATOR . $file->filename)
                 ) {
-                $result = $this->_moveFilesInArchive($file->filename, $file->getDerivativeFilename(), $archiveFolder, $file->has_derivative_image);
-                if (!$result) {
-                    throw new Exception(__('Cannot move files inside archive directory.'));
-                }
 
-                // Update file in database (automatically done in this hook).
-                $file->filename = $newFilename;
+                // Get the new filename.
+                $newFilename = basename($file->original_filename);
+
+                // Move file only if the name is a new one.
+                $item = $file->getItem();
+                $archiveFolder = $this->_getArchiveFolderName($item);
+                $newFilename = $archiveFolder . $newFilename;
+                if ($file->filename != $newFilename) {
+                    $result = $this->_moveFilesInArchiveSubfolders(
+                        $file->filename,
+                        $newFilename,
+                        $this->_getDerivativeExtension($file));
+                    if (!$result) {
+                        throw new Exception(__('Cannot move files inside archive directory.'));
+                    }
+
+                    // Update filename.
+                    $file->filename = $newFilename;
+                }
+            }
+
+            // Update file only if needed. It uses normal hook, so this hook
+            // will be call one more time, but filenames will be already updated
+            // so there is no risk of infinite loop.
+            if ($file_filename != $file->filename
+                    || $file_original_filename != $file->original_filename
+                ) {
+                $file->save();
             }
         }
     }
@@ -474,14 +467,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Checks if the folders exist in the archive repertory, then creates them.
      *
-     * @param string $archiveFolder Name of folder to create, without archive_dir.
+     * @param string $archiveFolder
+     *   Name of folder to create inside archive dir.
+     * @param string $folder
+     *   Name of folder to create inside archive dir.
      *
-     * @return boolean True if the path is created, Exception if an error occurs.
+     * @return boolean
+     *   True if each path is created, Exception if an error occurs.
      */
-    private function _createArchiveFolders($archiveFolder)
+    private function _createArchiveFolders($archiveFolder, $pathFolder = '')
     {
         if ($archiveFolder != '') {
-            foreach (self::$_pathsByType as $path) {
+            $folders = empty($pathFolder)
+                ? self::$_archivePathsByType
+                : array($pathFolder);
+            foreach ($folders as $path) {
                 $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
                 $result = $this->createFolder($fullpath);
             }
@@ -503,83 +503,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 && ($archiveFolder != DIRECTORY_SEPARATOR)
                 && ($archiveFolder != '')
             ) {
-            foreach (self::$_pathsByType as $path) {
+            foreach (self::$_archivePathsByType as $path) {
                 $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
                 if (realpath($path) != realpath($fullpath)) {
                     $this->removeFolder($fullpath);
                 }
             }
         }
-        return TRUE;
-    }
-
-    /**
-     * Moves, without renaming, a file and derivative files inside archive folder.
-     *
-     * New folders are created if needed. Old folders are removed if empty.
-     * No update of the database is done.
-     *
-     * @param string $archiveFilename
-     *   Name of the archive file to move.
-     * @param string $derivativeFilename
-     *   Name of the derivative files to move, because it can be different and it
-     *   can't be determined inside this helper.
-     * @param string $archiveFolder
-     *   Name of the folder, finishing with the directory separator, where to move
-     *   files, without archive_dir, usually "collection/dc:identifier" when this
-     *   plugin is enabled.
-     * @param boolean $hasDerivativeImage
-     *   Move derivative images too, if any.
-     *
-     * @return boolean
-     *   TRUE if files are moved, else FALSE.
-     */
-    private function _moveFilesInArchive($archiveFilename, $derivativeFilename, $archiveFolder, $hasDerivativeImage)
-    {
-        if ($archiveFilename == '' || $derivativeFilename == '' || $archiveFolder == '') {
-            return FALSE;
-        }
-
-        // Move file only if it is not in the right place.
-        $newArchiveFilename = $archiveFolder . basename($archiveFilename);
-        if ($archiveFilename == $newArchiveFilename) {
-            return TRUE;
-        }
-
-        // Create path if needed.
-        $result = $this->_createArchiveFolders($archiveFolder);
-
-        // Move original file using Omeka API.
-        $operation = new Omeka_Storage_Adapter_Filesystem(array(
-            'localDir' => FILES_DIR . DIRECTORY_SEPARATOR . self::$_pathsByType['original'],
-        ));
-        $operation->move($archiveFilename, $newArchiveFilename);
-
-        // If any, move derivative files using Omeka API.
-        if ($hasDerivativeImage) {
-            $newDerivativeFilename = $archiveFolder . basename($derivativeFilename);
-            foreach (self::$_pathsByType as $key => $path) {
-                // Original is managed above.
-                if ($key == 'original') {
-                    continue;
-                }
-                // Check if the derivative file exists or not to avoid some
-                // errors when moving.
-                if (file_exists(FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $derivativeFilename)) {
-                    $operation = new Omeka_Storage_Adapter_Filesystem(array(
-                        'localDir' => FILES_DIR . DIRECTORY_SEPARATOR . $path,
-                    ));
-                    $operation->move($derivativeFilename, $newDerivativeFilename);
-                }
-            }
-        }
-
-        // Remove all old empty folders.
-        $oldFolder = dirname($archiveFilename);
-        if ($oldFolder != $newFolder) {
-            $this->_removeArchiveFolders($oldFolder);
-        }
-
         return TRUE;
     }
 
@@ -634,6 +564,106 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             ) {
             @rmdir($path);
         }
+    }
+
+    /**
+     * Get the derivative filename from a filename and an extension.
+     *
+     * @param string $filename
+     * @param string $extension
+     *
+     * @return string
+     *   Filename with the new extension.
+     */
+    private function _getDerivativeFilename($filename, $extension)
+    {
+        // Don't forget to manage path with multiple dots or without extension.
+        $base = pathinfo($filename, PATHINFO_EXTENSION) ? substr($filename, 0, strrpos($filename, '.')) : $filename;
+        return $base . '.' . $extension;
+    }
+
+    /**
+     * Get the derivative filename from a filename and an extension.
+     *
+     * @param object $file
+     *
+     * @return string
+     *   Extension used for derivative files (usually "jpg").
+     */
+    private function _getDerivativeExtension($file)
+    {
+        return $file->has_derivative_image ? pathinfo($file->getDerivativeFilename(), PATHINFO_EXTENSION) : '';
+    }
+
+    /**
+     * Moves/renames a file and its derivatives inside archive/files subfolders.
+     *
+     * New folders are created if needed. Old folders are removed if empty.
+     * No update of the database is done.
+     *
+     * @param string $currentArchiveFilename
+     *   Name of the current archive file to move.
+     * @param string $newArchiveFilename
+     *   Name of the new archive file, with archive folder if any (usually
+     *   "collection/dc:identifier/").
+     * @param optional string $derivativeExtension
+     *   Extension of the derivative files to move, because it can be different
+     *   from the new archive filename and it can't be determined here.
+     *
+     * @return boolean
+     *   TRUE if files are moved, else FALSE.
+     */
+    private function _moveFilesInArchiveSubfolders($currentArchiveFilename, $newArchiveFilename, $derivativeExtension = '')
+    {
+        // A quick check to avoid some errors.
+        if (trim($currentArchiveFilename) == '' || trim($newArchiveFilename) == '') {
+            return FALSE;
+        }
+
+        // Move file only if it is not in the right place.
+        // If the main file is at the right place, this is always the case for
+        // the derivatives.
+        if ($currentArchiveFilename == $newArchiveFilename) {
+            return TRUE;
+        }
+
+        $currentArchiveFolder = dirname($currentArchiveFilename);
+        $newArchiveFolder = dirname($newArchiveFilename);
+
+        // Move the main original file using Omeka API.
+        $result = $this->_createArchiveFolders($newArchiveFolder, self::$_archivePathsByType['original']);
+        $operation = new Omeka_Storage_Adapter_Filesystem(array(
+            'localDir' => FILES_DIR . DIRECTORY_SEPARATOR . self::$_archivePathsByType['original'],
+        ));
+        $operation->move($currentArchiveFilename, $newArchiveFilename);
+
+        // If any, move derivative files using Omeka API.
+        if ($derivativeExtension != '') {
+            $currentDerivativeFilename = $this->_getDerivativeFilename($currentArchiveFilename, $derivativeExtension);
+            $newDerivativeFilename = $this->_getDerivativeFilename($newArchiveFilename, $derivativeExtension);
+            foreach (self::$_archivePathsByType as $key => $path) {
+                // Original is managed above.
+                if ($key == 'original') {
+                    continue;
+                }
+                // Check if the derivative file exists or not to avoid some
+                // errors when moving.
+                if (file_exists(FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $currentDerivativeFilename)) {
+                    $result = $this->_createArchiveFolders($newArchiveFolder, $path);
+                    $operation = new Omeka_Storage_Adapter_Filesystem(array(
+                        'localDir' => FILES_DIR . DIRECTORY_SEPARATOR . $path,
+                    ));
+                    $operation->move($currentDerivativeFilename, $newDerivativeFilename);
+                }
+            }
+        }
+
+        // Remove all old empty folders.
+        if ($currentArchiveFolder != $newArchiveFolder) {
+            $this->_removeArchiveFolders($currentArchiveFolder);
+        }
+
+        return TRUE;
     }
 
     /**

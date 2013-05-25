@@ -24,11 +24,16 @@ Current release is compatible with Omeka 2.0, but a little patch should be
 applied on one file of Omeka core, waiting for its official integration. For
 more information, see the proposed commit [get_derivative_filename].
 
+You can make this patch yourself too. You just need to simplify the line 269 of
+the file `application/models/File.php` (function `getDerivativeFilename()`):
+replace `$filename = basename($this->filename);`
+with    `$filename = $this->filename;`.
+
 The plugin works perfectly with filenames with Unicode characters, but all the
 system and the web environment on the server should be set according to this
-format. If derivative files are not created, check the behavior of the php
-function "escapeshellarg()", largely used in Omeka, or use only filenames with
-standard Ascii characters.
+format. If derivative files with non Ascii names are not created, check the
+behavior of the php function "escapeshellarg()", largely used in Omeka, or use
+only filenames with standard Ascii characters.
 
 
 Warning
