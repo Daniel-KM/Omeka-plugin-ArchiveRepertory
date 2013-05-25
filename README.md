@@ -90,4 +90,4 @@ Copyright
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
 [Daniel-KM]: http://github.com/Daniel-KM "Daniel Berthereau"
 [École des Ponts ParisTech]: http://bibliotheque.enpc.fr "École des Ponts ParisTech / ENPC"
-[get_derivative_filename]: https://github.com/Daniel-KM/Omeka/commit/5fcb88adcda51b43abc2565e7b279edaa614f5dd "commit get_derivative_filename"
+[get_derivative_filename]: https://github.com/Daniel-KM/Omeka/commit/f716af19b3be6d7e0ca77d36c08e409c4935b61c "commit get_derivative_filename"

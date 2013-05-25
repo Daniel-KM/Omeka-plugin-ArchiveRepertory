@@ -38,7 +38,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'archive_repertory_item_folder' => 'id',
         'archive_repertory_item_identifier_prefix' => 'document:',
         'archive_repertory_keep_original_filename' => TRUE,
-        'archive_repertory_base_original_filename' => TRUE,
+        'archive_repertory_base_original_filename' => FALSE,
     );
 
     /**
@@ -235,7 +235,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Files are renamed to their original name during insert.
         if ($args['insert']) {
-            // Rename file only if desired and needed.
+            // Rename file only if wanted and needed.
             if (get_option('archive_repertory_keep_original_filename')) {
                 $new_filename = basename($file->original_filename);
 
@@ -254,7 +254,12 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
         // After every record save, files are moved to their folder if needed.
         else {
-            // Rename file only if desired.
+            // Keep only basename of original filename in metadata if wanted.
+            if (get_option('archive_repertory_base_original_filename')) {
+                $file->original_filename = basename($file->original_filename);
+            }
+
+            // Rename file only if wanted.
             if (!get_option('archive_repertory_keep_original_filename')) {
                 return;
             }
@@ -262,10 +267,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // Check if file is already attached, so we can check folder name.
             if (empty($file->item_id)) {
                 return;
-            }
-
-            if (get_option('archive_repertory_base_original_filename')) {
-                $file->original_filename = basename($file->original_filename);
             }
 
             $item = $file->getItem();

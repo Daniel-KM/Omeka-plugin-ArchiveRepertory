@@ -81,13 +81,13 @@
 <fieldset id="fieldset-files"><legend><?php echo __('Files'); ?></legend>
     <div class="field">
         <label for="archive_repertory_keep_original_filename">
-            <?php echo __('Keep original name of attached files'); ?>
+            <?php echo __('Keep original filenames'); ?>
         </label>
         <div class="inputs">
         <?php echo get_view()->formCheckbox('archive_repertory_keep_original_filename', TRUE,
             array('checked' => (boolean) get_option('archive_repertory_keep_original_filename'))); ?>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will keep original filenames.') . '<br />';
+                <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.') . '<br />';
                 echo '<strong>' . __('Warning') . '</strong>:</br>';
                 echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
                 ?>
@@ -96,16 +96,13 @@
     </div>
     <div class="field">
         <label for="archive_repertory_base_original_filename">
-            <?php echo __('Keep only base of original name of attached files'); ?>
+            <?php echo __('Keep only base of original filenames'); ?>
         </label>
         <div class="inputs">
         <?php echo get_view()->formCheckbox('archive_repertory_base_original_filename', TRUE,
             array('checked' => (boolean) get_option('archive_repertory_base_original_filename'))); ?>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will keep only base of original filenames, not their path. This option depends on the previous one.') . '<br />';
-                echo '<strong>' . __('Warning') . '</strong>:</br>';
-                echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
-                ?>
+                <?php echo __('If checked, Omeka will keep only base of original filenames in metadata, not their path or url. This option is independant from previous ones.') . '<br />'; ?>
             </p>
         </div>
     </div>
