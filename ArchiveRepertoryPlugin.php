@@ -33,11 +33,16 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @var array This plugin's options.
      */
     protected $_options = array(
+        // Collections options.
         'archive_repertory_add_collection_folder' => TRUE,
         'archive_repertory_collection_folders' => NULL,
+        // Items options.
         'archive_repertory_item_folder' => 'id',
         'archive_repertory_item_identifier_prefix' => 'document:',
+        'archive_repertory_convert_folder_to_ascii' => TRUE,
+        // Files options.
         'archive_repertory_keep_original_filename' => TRUE,
+        'archive_repertory_convert_filename_to_ascii' => FALSE,
         'archive_repertory_base_original_filename' => FALSE,
     );
 
@@ -87,6 +92,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 ? 'Dublin Core:Identifier'
                 : 'None'));
             delete_option('archive_repertory_add_item_folder');
+            set_option('archive_repertory_convert_folder_to_ascii', $this->_options['archive_repertory_convert_folder_to_ascii']);
+            set_option('archive_repertory_convert_filename_to_ascii', $this->_options['archive_repertory_convert_filename_to_ascii']);
         }
     }
 
@@ -124,6 +131,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
         unset($listElements['Dublin Core']);
 
+        $allowUnicode = $this->_checkUnicodeInstallation();
+
         require 'config_form.php';
     }
 
@@ -137,18 +146,20 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $post = $args['post'];
 
         // Save settings.
-        set_option('archive_repertory_add_collection_folder', (int) (boolean) $post['archive_repertory_add_collection_folder']);
+        set_option('archive_repertory_add_collection_folder', (boolean) $post['archive_repertory_add_collection_folder']);
         set_option('archive_repertory_item_folder', $post['archive_repertory_item_folder']);
-        set_option('archive_repertory_item_identifier_prefix', $this->_sanitizeString($post['archive_repertory_item_identifier_prefix']));
-        set_option('archive_repertory_keep_original_filename', (int) (boolean) $post['archive_repertory_keep_original_filename']);
-        set_option('archive_repertory_base_original_filename', (int) (boolean) $post['archive_repertory_base_original_filename']);
+        set_option('archive_repertory_item_identifier_prefix', trim($post['archive_repertory_item_identifier_prefix']));
+        set_option('archive_repertory_convert_folder_to_ascii', (boolean) $post['archive_repertory_convert_folder_to_ascii']);
+        set_option('archive_repertory_keep_original_filename', (boolean) $post['archive_repertory_keep_original_filename']);
+        set_option('archive_repertory_convert_filename_to_ascii', (boolean) $post['archive_repertory_convert_filename_to_ascii']);
+        set_option('archive_repertory_base_original_filename', (boolean) $post['archive_repertory_base_original_filename']);
 
         $collections = get_records('Collection', array(), 0);
         set_loop_records('collections', $collections);
         $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
         foreach (loop('collections') as $collection) {
             $id = 'archive_repertory_collection_folder_' . $collection->id;
-            $collection_names[$collection->id] = $this->_sanitizeString(trim($post[$id], ' /\\'));
+            $collection_names[$collection->id] = $this->_sanitizeName($post[$id]);
         }
         set_option('archive_repertory_collection_folders', serialize($collection_names));
 
@@ -199,7 +210,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         foreach ($files as $file) {
             // Move file only if it is not in the right place.
             // We don't use original filename here, because this is managed in
-            // hookAfterSavefile() when the file is inserted.
+            // hookAfterSavefile() when the file is inserted. Here, the filename
+            // is already sanitized.
             $newFilename = $archiveFolder . basename($file->filename);
             if ($file->filename != $newFilename) {
                 $result = $this->_moveFilesInArchiveSubfolders(
@@ -232,8 +244,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Files can't be moved during insert, because has_derivative is set
         // just after it. Of course, this can be bypassed, but we don't.
         if (!$args['insert']) {
-            // Check if file is already attached, so we can check folder name.
-            if (empty($file->item_id)) {
+            // Check stored file status.
+            if ($file->stored == 0) {
+                return;
+            }
+
+            // Check if main file is already in the archive folder.
+            if (!is_file(FILES_DIR . DIRECTORY_SEPARATOR . self::$_archivePathsByType['original'] . DIRECTORY_SEPARATOR . $file->filename)) {
                 return;
             }
 
@@ -246,14 +263,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $file->original_filename = basename($file->original_filename);
             }
 
-            // Rename file only if wanted and needed...
-            if (get_option('archive_repertory_keep_original_filename')
-                    // and if main file is already in the archive folder.
-                    && is_file(FILES_DIR . DIRECTORY_SEPARATOR . self::$_archivePathsByType['original'] . DIRECTORY_SEPARATOR . $file->filename)
-                ) {
-
+            // Rename file only if wanted and needed.
+            if (get_option('archive_repertory_keep_original_filename')) {
                 // Get the new filename.
-                $newFilename = basename($file->original_filename);
+                $newFilename = $this->_sanitizeName(basename($file->original_filename));
+                if (get_option('archive_repertory_convert_filename_to_ascii')) {
+                    $newFilename = $this->_convertNameToAscii($newFilename);
+                }
 
                 // Move file only if the name is a new one.
                 $item = $file->getItem();
@@ -311,6 +327,63 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Gets collection folder name from an item.
+     *
+     * @param object $item
+     *
+     * @return string Unique sanitized name of the collection.
+     */
+    private function _getCollectionFolderName($item)
+    {
+        // Collection folder is created when the module is installed and configured.
+        if (get_option('archive_repertory_add_collection_folder') && ($item->collection_id !== NULL)) {
+            $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
+            $collection = $collection_names[$item->collection_id];
+            if ($collection != '') {
+                $collection .= DIRECTORY_SEPARATOR;
+            }
+        }
+        else {
+          $collection = '';
+        }
+
+        return $collection;
+    }
+
+    /**
+     * Gets item folder name from an item and create folder if needed.
+     *
+     * @param object $item
+     *
+     * @return string Unique sanitized name of the item.
+     */
+    private function _getItemFolderName($item)
+    {
+        $item_folder = get_option('archive_repertory_item_folder');
+
+        switch ($item_folder) {
+            // This case is a common exception.
+            case 'Dublin Core:Identifier':
+                $name = $this->_createItemFolderNameFromDCidentifier($item);
+                break;
+            case 'id':
+                return (string) $item->id . DIRECTORY_SEPARATOR;
+            case 'None':
+            case '':
+                return '';
+            default:
+                $name = $this->_createItemFolderName($item, array(
+                    substr($item_folder, 0, strrpos($item_folder, ':')),
+                    substr($item_folder, strrpos($item_folder, ':') + 1),
+                ));
+        }
+
+        return (get_option('archive_repertory_convert_folder_to_ascii'))
+            ? $this->_convertNameToAscii($name) . DIRECTORY_SEPARATOR
+            : $name . DIRECTORY_SEPARATOR;
+    }
+
+    /**
      * Creates the default name for a collection folder.
      *
      * Default name is the first word of the collection name. The id is added if
@@ -339,31 +412,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $default_name .= '_' . $collection->id;
         }
 
-        return $this->_sanitizeString($default_name);
-    }
-
-    /**
-     * Gets collection folder name from an item.
-     *
-     * @param object $item
-     *
-     * @return string Unique sanitized name of the collection.
-     */
-    private function _getCollectionFolderName($item)
-    {
-        // Collection folder is created when the module is installed and configured.
-        if (get_option('archive_repertory_add_collection_folder') && ($item->collection_id !== NULL)) {
-            $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
-            $collection = $collection_names[$item->collection_id];
-            if ($collection != '') {
-                $collection .= DIRECTORY_SEPARATOR;
-            }
-        }
-        else {
-          $collection = '';
-        }
-
-        return $collection;
+        return $this->_sanitizeName($default_name);
     }
 
     /**
@@ -382,7 +431,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $identifier = metadata($item, $metadata, 0);
         return empty($identifier)
             ? (string) $item->id
-            : $this->_sanitizeString($identifier);
+            : $this->_sanitizeName($identifier);
     }
 
     /**
@@ -412,7 +461,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Keep only the first identifier with the configured prefix.
         $prefix = get_option('archive_repertory_item_identifier_prefix');
         $item_identifier = substr($filtered_identifiers[0], strlen($prefix));
-        return $this->_sanitizeString($item_identifier);
+        return $this->_sanitizeName($item_identifier);
     }
 
     /**
@@ -435,82 +484,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         return (substr($identifier, 0, $prefix_len) == $prefix);
-    }
-
-    /**
-     * Gets item folder name from an item and create folder if needed.
-     *
-     * @param object $item
-     *
-     * @return string Unique sanitized name of the item.
-     */
-    private function _getItemFolderName($item)
-    {
-        $item_folder = get_option('archive_repertory_item_folder');
-        switch ($item_folder) {
-            // This case is a common exception.
-            case 'Dublin Core:Identifier':
-                return $this->_createItemFolderNameFromDCidentifier($item) . DIRECTORY_SEPARATOR;
-            case 'id':
-                return (string) $item->id . DIRECTORY_SEPARATOR;
-            case 'None':
-            case '':
-                return '';
-            default:
-                return $this->_createItemFolderName($item, array(
-                    substr($item_folder, 0, strrpos($item_folder, ':')),
-                    substr($item_folder, strrpos($item_folder, ':') + 1),
-                )) . DIRECTORY_SEPARATOR;
-        }
-    }
-
-    /**
-     * Checks if the folders exist in the archive repertory, then creates them.
-     *
-     * @param string $archiveFolder
-     *   Name of folder to create inside archive dir.
-     * @param string $folder
-     *   Name of folder to create inside archive dir.
-     *
-     * @return boolean
-     *   True if each path is created, Exception if an error occurs.
-     */
-    private function _createArchiveFolders($archiveFolder, $pathFolder = '')
-    {
-        if ($archiveFolder != '') {
-            $folders = empty($pathFolder)
-                ? self::$_archivePathsByType
-                : array($pathFolder);
-            foreach ($folders as $path) {
-                $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
-                $result = $this->createFolder($fullpath);
-            }
-        }
-        return TRUE;
-    }
-
-    /**
-     * Removes empty folders in the archive repertory.
-     *
-     * @param string $archiveFolder Name of folder to delete, without archive_dir.
-     *
-     * @return boolean True if the path is created, Exception if an error occurs.
-     */
-    private function _removeArchiveFolders($archiveFolder)
-    {
-        if (($archiveFolder != '.')
-                && ($archiveFolder != '..')
-                && ($archiveFolder != DIRECTORY_SEPARATOR)
-                && ($archiveFolder != '')
-            ) {
-            foreach (self::$_archivePathsByType as $path) {
-                $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
-                if (realpath($path) != realpath($fullpath)) {
-                    $this->removeFolder($fullpath);
-                }
-            }
-        }
-        return TRUE;
     }
 
     /**
@@ -564,6 +537,55 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             ) {
             @rmdir($path);
         }
+    }
+
+    /**
+     * Checks if the folders exist in the archive repertory, then creates them.
+     *
+     * @param string $archiveFolder
+     *   Name of folder to create inside archive dir.
+     * @param string $folder
+     *   Name of folder to create inside archive dir.
+     *
+     * @return boolean
+     *   True if each path is created, Exception if an error occurs.
+     */
+    private function _createArchiveFolders($archiveFolder, $pathFolder = '')
+    {
+        if ($archiveFolder != '') {
+            $folders = empty($pathFolder)
+                ? self::$_archivePathsByType
+                : array($pathFolder);
+            foreach ($folders as $path) {
+                $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
+                $result = $this->createFolder($fullpath);
+            }
+        }
+        return TRUE;
+    }
+
+    /**
+     * Removes empty folders in the archive repertory.
+     *
+     * @param string $archiveFolder Name of folder to delete, without files dir.
+     *
+     * @return boolean True if the path is created, Exception if an error occurs.
+     */
+    private function _removeArchiveFolders($archiveFolder)
+    {
+        if (($archiveFolder != '.')
+                && ($archiveFolder != '..')
+                && ($archiveFolder != DIRECTORY_SEPARATOR)
+                && ($archiveFolder != '')
+            ) {
+            foreach (self::$_archivePathsByType as $path) {
+                $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
+                if (realpath($path) != realpath($fullpath)) {
+                    $this->removeFolder($fullpath);
+                }
+            }
+        }
+        return TRUE;
     }
 
     /**
@@ -667,20 +689,80 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Returns a sanitized and unaccentued string for folder or file path.
+     * Returns a sanitized string for folder or file path.
+     *
+     * The string should be a simple name, not a full path or url, because "/",
+     * "\" and ":" are removed (so a path should be sanitized by part).
      *
      * @param string $string The string to sanitize.
      *
-     * @return string The sanitized string to use as a folder or a file name.
+     * @return string The sanitized string.
      */
-    private function _sanitizeString($string)
+    private function _sanitizeName($string)
     {
-        $string = trim(strip_tags($string));
+        $string = strip_tags($string);
+        $string = trim($string, ' /\\?<>:*%|"\'`&;');
+        $string = preg_replace('/[\(\{]/', '[', $string);
+        $string = preg_replace('/[\)\}]/', ']', $string);
+        $string = preg_replace('/[[:cntrl:]\/\\\_\?<>:\*\%\|\"\'`\&\;#+\^\$\s]/', ' ', $string);
+        return substr(preg_replace('/\s+/', ' ', $string), -250);
+    }
+
+    /**
+     * Returns a sanitized and unaccentued string for folder or file name.
+     *
+     * @param string $string The string to convert to ascii.
+     *
+     * @see ArchiveRepertoryPlugin::_sanitizeName()
+     *
+     * @return string The converted string to use as a folder or a file name.
+     */
+    private function _convertNameToAscii($string)
+    {
+        $string = $this->_sanitizeName($string);
         $string = htmlentities($string, ENT_NOQUOTES, 'utf-8');
-        $string = preg_replace('#\&([A-Za-z])(?:uml|circ|tilde|acute|grave|cedil|ring)\;#', '\1', $string);
+        $string = preg_replace('#\&([A-Za-z])(?:acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml)\;#', '\1', $string);
         $string = preg_replace('#\&([A-Za-z]{2})(?:lig)\;#', '\1', $string);
         $string = preg_replace('#\&[^;]+\;#', '_', $string);
-        $string = preg_replace('/[^[:alnum:]\(\)\[\]_\-\.#~@+:]/', '_', $string);
-        return preg_replace('/_+/', '_', $string);
+        $string = preg_replace('/[^[:alnum:]\[\]_\-\.#~@+:]/', '_', $string);
+        return substr(preg_replace('/_+/', '_', $string), -250);
+    }
+
+    /**
+     * Checks if all the system (server + php + web environment) allows to
+     * manage Unicode filename securely.
+     *
+     * @internal This function simply checks the true result of functions
+     * escapeshellarg() and touch with a non Ascii filename.
+     *
+     * @return array of issues.
+     */
+    private function _checkUnicodeInstallation()
+    {
+        $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
+
+        /**
+         * An ugly, non-ASCII-character safe replacement of escapeshellarg().
+         *
+         * @see http://www.php.net/manual/function.escapeshellarg.php
+         */
+        function escapeshellarg_special($string) {
+          return "'" . str_replace("'", "'\\''", $string) . "'";
+        }
+
+        $result = array();
+
+        // Command line via web check.
+        if (escapeshellarg($filename) != escapeshellarg_special($filename)) {
+            $result['cli'] = __('- An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
+        }
+
+        // File system check.
+        $filepath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $filename;
+        if (!(touch($filepath) && file_exists($filepath))) {
+            $result['fs'] = __('- A file system error occurs when testing function "touch \'%s\'".', $filepath);
+        }
+
+        return $result;
     }
 }

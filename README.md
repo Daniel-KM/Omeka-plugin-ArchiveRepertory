@@ -20,7 +20,7 @@ Uncompress files and rename plugin folder "ArchiveRepertory".
 
 Then install it like any other Omeka plugin and follow the config instructions.
 
-Current release is compatible with Omeka 2.0, but a little patch should be
+Current release is compatible with Omeka 2.0, but a two lines patch should be
 applied on one file of Omeka core, waiting for its official integration. For
 more information, see the proposed commit [get_derivative_filename].
 
@@ -29,11 +29,38 @@ the file `application/models/File.php` (function `getDerivativeFilename()`):
 replace `$filename = basename($this->filename);`
 with    `$filename = $this->filename;`.
 
-The plugin works perfectly with filenames with Unicode characters, but all the
-system and the web environment on the server should be set according to this
-format. If derivative files with non Ascii names are not created, check the
-behavior of the php function "escapeshellarg()", largely used in Omeka, or use
-only filenames with standard Ascii characters.
+
+Unicode filenames
+-----------------
+
+As Omeka, the plugin works perfectly with filenames with Unicode characters, but
+all the system, database, filesystem and php web/cli environment on the server
+should be set according to this format.
+
+An autocheck is done in the config page. You can check it too when you upload a
+file with a Unicode name.
+
+If derivative files with non Ascii names are not created, check the behavior of
+the php function "escapeshellarg()", largely used in Omeka. The problem occurs
+only when Omeka uses command line interface, in particular to create derivative
+images or to get mime type from files. After, you have four possibilities:
+
+- use only filenames with standard Ascii characters;
+- set options to auto convert files and folders names to Ascii;
+- change the configuration of the server if you have access to it;
+- replace every `escapeshellarg()` (present in eight files in Omeka core) with
+`escapeshellarg_special()` and add the following code in `application/libraries/globals.php`:
+
+```
+/**
+ * An ugly, non-ASCII-character safe replacement of escapeshellarg().
+ *
+ * @see http://www.php.net/manual/function.escapeshellarg.php
+ */
+function escapeshellarg_special($string) {
+  return "'" . str_replace("'", "'\\''", $string) . "'";
+}
+```
 
 
 Warning
@@ -43,6 +70,9 @@ Use it at your own risk.
 
 It's always recommended to backup your database so you can roll back if needed.
 
+Furthermore, currently, no check is done on the name of files, so if two files
+have the same name and are in the same folder, the second will overwrite the
+first.
 
 Troubleshooting
 ---------------

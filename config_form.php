@@ -8,8 +8,6 @@
     echo '<li>' . __('Currently, no check is done on the name of files, so if two files have the same name and are in the same folder, the second will overwrite the first.') . '</li>';
     echo '<li>' . __('Currently, no check is done on the name of folders, either for collections or for items. No files will be lost if two folders have the same name, but files attached to a record will be mixed in this folder.') . '</li>';
     echo '<li>' . __('Currently, two lines should be added in Omeka core (2.0) in order to allow a good functioning: see README.') . '</li>';
-    echo '<li>' . __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...) when the character encoding of the server is the same than the web environment.') . '</li>';
-    echo '<li>' . __('If this is not the case, filenames should use only Ascii characters.') . '</li>';
     echo '</ul>';
     echo '</p>';
 ?>
@@ -48,9 +46,9 @@
             </label>
             <p class="explanation">
                 <?php echo __('If you choose to add a folder, Omeka will add subfolders for each item in "files" folders, for example "files/original/unique_identifier/".');
-                echo ' ' . __('Names of these subfolders will be sanitized. New files will be stored inside them. Old files will be moved when item will be updated.') . '<br />' . PHP_EOL;
+                echo ' ' . __('New files will be stored inside them. Old files will be moved when item will be updated.') . '<br />' . PHP_EOL;
                 echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
-                echo ' ' . __('So recommended ids are "Dublin Core identifier" and "Internal item id".') . '<br />';
+                echo ' ' . __('So recommended ids are "Dublin Core Identifier", "Internal item id" and eventually "Dublin Core Title .') . '<br />' . PHP_EOL;
                 echo __('If this identifier does not exists, the Omeka internal item id will be used.'); ?>
             </p>
         </div>
@@ -77,6 +75,20 @@
             </p>
         </div>
     </div>
+    <div class="field">
+        <label for="archive_repertory_convert_folder_to_ascii">
+            <?php echo __('Convert folder names to Ascii'); ?>
+        </label>
+        <div class="inputs">
+        <?php echo get_view()->formCheckbox('archive_repertory_convert_folder_to_ascii', TRUE,
+            array('checked' => (boolean) get_option('archive_repertory_convert_folder_to_ascii'))); ?>
+            <p class="explanation">
+                <?php echo __('If checked, Omeka will convert every folder name to its Ascii equivalent. This option depends on the first one.') . '<br />' . PHP_EOL;
+                echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
+                ?>
+            </p>
+        </div>
+    </div>
 </fieldset>
 <fieldset id="fieldset-files"><legend><?php echo __('Files'); ?></legend>
     <div class="field">
@@ -87,10 +99,41 @@
         <?php echo get_view()->formCheckbox('archive_repertory_keep_original_filename', TRUE,
             array('checked' => (boolean) get_option('archive_repertory_keep_original_filename'))); ?>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.') . '<br />';
-                echo '<strong>' . __('Warning') . '</strong>:</br>';
-                echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.') . '<br />';
+                <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.') . '<br />' . PHP_EOL;
+                echo '<strong>' . __('Warning') . '</strong>:</br>' . PHP_EOL;
+                echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.');
                 ?>
+            </p>
+        </div>
+    </div>
+    <div class="field">
+        <label for="archive_repertory_convert_filename_to_ascii">
+            <?php echo __('Convert Unicode filenames to Ascii'); ?>
+        </label>
+        <div class="inputs">
+        <?php echo get_view()->formCheckbox('archive_repertory_convert_filename_to_ascii', TRUE,
+            array('checked' => (boolean) get_option('archive_repertory_convert_filename_to_ascii'))); ?>
+            <p class="explanation">
+                <?php echo __('If checked, Omeka will convert every filename to its Ascii equivalent. This option depends on the first one.') . '<br />' . PHP_EOL;
+                echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.') . '<br />' . PHP_EOL;
+                echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...) when the character encoding of the server is the same than the web environment.');
+                echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />' . PHP_EOL;
+                if (empty($allowUnicode)) {
+                    echo __('This server is compatible with Unicode.');
+                }
+                else {
+                    echo '<strong>' . __('Warning') . '</strong>:</br>' . PHP_EOL;
+                    echo __('This server is not fully compatible with Unicode:') . '<br />' . PHP_EOL;
+                    if (isset($allowUnicode['cli'])) {
+                        echo $allowUnicode['cli'] . '<br />' . PHP_EOL;
+                        echo __('Usually, this is not a problem with this plugin and common plugins.');
+                        echo ' ' . __('But if you use a plugin that calls a program via the command line of the server, filenames issues can occur.') . '<br />' . PHP_EOL;
+                    }
+                    if (isset($allowUnicode['fs'])) {
+                        echo $allowUnicode['fs'] . '<br />' . PHP_EOL;
+                        echo __('It is strongly recommanded to convert your filename to ascii.') . '<br />' . PHP_EOL;
+                    }
+                } ?>
             </p>
         </div>
     </div>
