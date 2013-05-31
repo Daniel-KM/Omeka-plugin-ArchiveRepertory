@@ -336,7 +336,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     private function _getCollectionFolderName($item)
     {
         // Collection folder is created when the module is installed and configured.
-        if (get_option('archive_repertory_add_collection_folder') && ($item->collection_id !== NULL)) {
+        if (get_option('archive_repertory_add_collection_folder') && !empty($item->collection_id)) {
             $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
             $collection = $collection_names[$item->collection_id];
             if ($collection != '') {
