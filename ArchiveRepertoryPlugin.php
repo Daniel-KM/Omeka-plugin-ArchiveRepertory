@@ -44,6 +44,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'archive_repertory_keep_original_filename' => TRUE,
         'archive_repertory_convert_filename_to_ascii' => FALSE,
         'archive_repertory_base_original_filename' => FALSE,
+        // Other derivative folders.
+        'archive_repertory_derivative_folders' => '',
     );
 
     /**
@@ -51,12 +53,25 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @var array
      */
-    static private $_archivePathsByType = array(
+    static private $_pathsByType = array(
         'original' => 'original',
         'fullsize' => 'fullsize',
         'thumbnail' => 'thumbnails',
         'square_thumbnail' => 'square_thumbnails',
     );
+
+    /**
+     * Derivative extension for each type of files/derivatives, used when a
+     * plugin doesn't use the Omeka standard ones. These lasts are used by
+     * default. The dot before the extension should be specified if needed.
+     *
+     * This setting is used only when files are moved or deleted without use of
+     * the original plugin, because the original plugin knows to create and
+     * to delete them at the right place, of course.
+     *
+     * @var array
+     */
+    private $_derivativeExtensionsByType = array();
 
     /**
      * Installs the plugin.
@@ -160,6 +175,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('archive_repertory_keep_original_filename', (boolean) $post['archive_repertory_keep_original_filename']);
         set_option('archive_repertory_convert_filename_to_ascii', (boolean) $post['archive_repertory_convert_filename_to_ascii']);
         set_option('archive_repertory_base_original_filename', (boolean) $post['archive_repertory_base_original_filename']);
+        set_option('archive_repertory_derivative_folders', trim($post['archive_repertory_derivative_folders']));
 
         $collections = get_records('Collection', array(), 0);
         set_loop_records('collections', $collections);
@@ -257,7 +273,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             }
 
             // Check if main file is already in the archive folder.
-            if (!is_file(FILES_DIR . DIRECTORY_SEPARATOR . self::$_archivePathsByType['original'] . DIRECTORY_SEPARATOR . $file->filename)) {
+            if (!is_file($this->_getFullArchivePath('original') . DIRECTORY_SEPARATOR . $file->filename)) {
                 return;
             }
 
@@ -326,7 +342,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique and sanitized name folder name of the item.
      */
-    private function _getArchiveFolderName($item)
+    protected function _getArchiveFolderName($item)
     {
         $collection_folder = $this->_getCollectionFolderName($item);
         $item_folder = $this->_getItemFolderName($item);
@@ -340,7 +356,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique sanitized name of the collection.
      */
-    private function _getCollectionFolderName($item)
+    protected function _getCollectionFolderName($item)
     {
         // Collection folder is created when the module is installed and configured.
         if (get_option('archive_repertory_add_collection_folder') && !empty($item->collection_id)) {
@@ -364,7 +380,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique sanitized name of the item.
      */
-    private function _getItemFolderName($item)
+    protected function _getItemFolderName($item)
     {
         $item_folder = get_option('archive_repertory_item_folder');
 
@@ -400,7 +416,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique sanitized name of the collection.
      */
-    private function _createCollectionDefaultName($collection)
+    protected function _createCollectionDefaultName($collection)
     {
         $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
         if ($collection_names === FALSE) {
@@ -433,7 +449,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique sanitized name of the item.
      */
-    private function _createItemFolderName($item, $metadata)
+    protected function _createItemFolderName($item, $metadata)
     {
         $identifier = metadata($item, $metadata, 0);
         return empty($identifier)
@@ -452,7 +468,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string Unique sanitized name of the item.
      */
-    private function _createItemFolderNameFromDCidentifier($item)
+    protected function _createItemFolderNameFromDCidentifier($item)
     {
         $identifiers = metadata($item, array('Dublin Core', 'Identifier'), 'all');
         if (empty($identifiers)) {
@@ -480,7 +496,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @return boolean
      *   True if identifier begins with the prefix, false else.
      */
-    private function _filteredIdentifier($identifier)
+    protected function _filteredIdentifier($identifier)
     {
         static $prefix;
         static $prefix_len;
@@ -502,7 +518,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return boolean True if the path is created, Exception if an error occurs.
      */
-    public static function createFolder($path)
+    protected function _createFolder($path)
     {
         if ($path != '') {
             if (file_exists($path)) {
@@ -530,20 +546,105 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @note Currently, Omeka API doesn't provide a function to remove a folder.
      *
      * @param string $path Full path of the folder to remove.
+     * @param boolean $evenNonEmpty Remove non empty folder
+     *   This parameter can be used with non standard folders.
      *
      * @return void.
      */
-    public static function removeFolder($path)
+    protected function _removeFolder($path, $evenNonEmpty = false)
     {
         $path = realpath($path);
         if (file_exists($path)
                 && is_dir($path)
                 && is_readable($path)
-                && (count(@scandir($path)) == 2) // Only '.' and '..'.
+                && ((count(@scandir($path)) == 2) // Only '.' and '..'.
+                    || $evenNonEmpty)
                 && is_writable($path)
             ) {
-            @rmdir($path);
+            $this->_rrmdir($path);
         }
+    }
+
+    /**
+     * Removes directories recursively.
+     *
+     * @param string $dirPath Directory name.
+     *
+     * @return boolean
+     */
+    protected function _rrmdir($dirPath)
+    {
+        $glob = glob($dirPath);
+        foreach ($glob as $g) {
+            if (!is_dir($g)) {
+                unlink($g);
+            }
+            else {
+                $this->_rrmdir("$g/*");
+                rmdir($g);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Get the archive folder from a name path
+     *
+     * Example: 'original' can return '/var/www/omeka/files/original'.
+     *
+     * @param string $namePath the name of the path.
+     *
+     * @return string
+     *   Full archive path, or empty if none.
+     */
+    protected function _getFullArchivePath($namePath)
+    {
+        $archivePaths = $this->_getFullArchivePaths();
+        return isset($archivePaths[$namePath])
+             ? $archivePaths[$namePath]
+             : '';
+    }
+
+    /**
+     * Get all archive folders with full paths, eventually with other derivative
+     * folders. This function updates the derivative extensions too.
+     *
+     * @return array of folders.
+     */
+    protected function _getFullArchivePaths()
+    {
+        static $archivePaths = array();
+
+        if (empty($archivePaths)) {
+            foreach (self::$_pathsByType as $name => $path) {
+                $archivePaths[$name] = FILES_DIR . DIRECTORY_SEPARATOR . $path;
+            }
+
+            $derivatives = explode(',', get_option('archive_repertory_derivative_folders'));
+            foreach ($derivatives as $key => $value) {
+                if (strpos($value, '|') === FALSE) {
+                    $name = trim($value);
+                }
+                else {
+                    list($name, $extension) = explode('|', $value);
+                    $name = trim($name);
+                    $extension = trim($extension);
+                    if ($extension != '') {
+                        $this->_derivativeExtensionsByType[$name] = $extension;
+                    }
+                }
+                $path = realpath(FILES_DIR . DIRECTORY_SEPARATOR . $name);
+                if (!empty($name) && !empty($path) && $path != '/') {
+                    $archivePaths[$name] = $path;
+                }
+                else {
+                    unset($derivatives[$key]);
+                    set_option('archive_repertory_derivative_folders', implode(', ', $derivatives));
+                }
+            }
+        }
+
+        return $archivePaths;
     }
 
     /**
@@ -551,21 +652,22 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @param string $archiveFolder
      *   Name of folder to create inside archive dir.
-     * @param string $folder
-     *   Name of folder to create inside archive dir.
+     * @param string $pathFolder
+     *   (Optional) Name of folder where to create archive folder. If not set,
+     *   the archive folder will be created in all derivative paths.
      *
      * @return boolean
      *   True if each path is created, Exception if an error occurs.
      */
-    private function _createArchiveFolders($archiveFolder, $pathFolder = '')
+    protected function _createArchiveFolders($archiveFolder, $pathFolder = '')
     {
         if ($archiveFolder != '') {
             $folders = empty($pathFolder)
-                ? self::$_archivePathsByType
+                ? $this->_getFullArchivePaths()
                 : array($pathFolder);
             foreach ($folders as $path) {
-                $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
-                $result = $this->createFolder($fullpath);
+                $fullpath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
+                $result = $this->_createFolder($fullpath);
             }
         }
         return TRUE;
@@ -578,17 +680,17 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return boolean True if the path is created, Exception if an error occurs.
      */
-    private function _removeArchiveFolders($archiveFolder)
+    protected function _removeArchiveFolders($archiveFolder)
     {
         if (($archiveFolder != '.')
                 && ($archiveFolder != '..')
                 && ($archiveFolder != DIRECTORY_SEPARATOR)
                 && ($archiveFolder != '')
             ) {
-            foreach (self::$_archivePathsByType as $path) {
-                $fullpath = FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $archiveFolder;
-                if (realpath($path) != realpath($fullpath)) {
-                    $this->removeFolder($fullpath);
+            foreach ($this->_getFullArchivePaths() as $path) {
+                $folderPath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
+                if (realpath($path) != realpath($folderPath)) {
+                    $this->_removeFolder($folderPath);
                 }
             }
         }
@@ -596,19 +698,25 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Get the derivative filename from a filename and an extension.
+     * Get the derivative filename from a filename and an extension. A check can
+     * be done on the derivative type to allow use of a non standard extension,
+     * for example with a plugin that doesn't follow standard naming.
      *
      * @param string $filename
-     * @param string $extension
+     * @param string $defaultExtension
+     * @param string $derivativeType
+     *   The derivative type allows to use a non standard extension.
      *
      * @return string
      *   Filename with the new extension.
      */
-    private function _getDerivativeFilename($filename, $extension)
+    protected function _getDerivativeFilename($filename, $defaultExtension, $derivativeType = null)
     {
-        // Don't forget to manage path with multiple dots or without extension.
         $base = pathinfo($filename, PATHINFO_EXTENSION) ? substr($filename, 0, strrpos($filename, '.')) : $filename;
-        return $base . '.' . $extension;
+        $fullExtension = !is_null($derivativeType) && isset($this->_derivativeExtensionsByType[$derivativeType])
+            ? $this->_derivativeExtensionsByType[$derivativeType]
+            : '.' . $defaultExtension;
+        return $base . $fullExtension;
     }
 
     /**
@@ -617,9 +725,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param object $file
      *
      * @return string
-     *   Extension used for derivative files (usually "jpg").
+     *   Extension used for derivative files (usually "jpg" for images).
      */
-    private function _getDerivativeExtension($file)
+    protected function _getDerivativeExtension($file)
     {
         return $file->has_derivative_image ? pathinfo($file->getDerivativeFilename(), PATHINFO_EXTENSION) : '';
     }
@@ -642,7 +750,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @return boolean
      *   TRUE if files are moved, else FALSE.
      */
-    private function _moveFilesInArchiveSubfolders($currentArchiveFilename, $newArchiveFilename, $derivativeExtension = '')
+    protected function _moveFilesInArchiveSubfolders($currentArchiveFilename, $newArchiveFilename, $derivativeExtension = '')
     {
         // A quick check to avoid some errors.
         if (trim($currentArchiveFilename) == '' || trim($newArchiveFilename) == '') {
@@ -660,27 +768,34 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $newArchiveFolder = dirname($newArchiveFilename);
 
         // Move the main original file using Omeka API.
-        $result = $this->_createArchiveFolders($newArchiveFolder, self::$_archivePathsByType['original']);
+        $result = $this->_createArchiveFolders($newArchiveFolder, $this->_getFullArchivePath('original'));
         $operation = new Omeka_Storage_Adapter_Filesystem(array(
-            'localDir' => FILES_DIR . DIRECTORY_SEPARATOR . self::$_archivePathsByType['original'],
+            'localDir' => $this->_getFullArchivePath('original'),
         ));
         $operation->move($currentArchiveFilename, $newArchiveFilename);
 
         // If any, move derivative files using Omeka API.
         if ($derivativeExtension != '') {
-            $currentDerivativeFilename = $this->_getDerivativeFilename($currentArchiveFilename, $derivativeExtension);
-            $newDerivativeFilename = $this->_getDerivativeFilename($newArchiveFilename, $derivativeExtension);
-            foreach (self::$_archivePathsByType as $key => $path) {
+            foreach ($this->_getFullArchivePaths() as $derivativeType => $path) {
                 // Original is managed above.
-                if ($key == 'original') {
+                if ($derivativeType == 'original') {
                     continue;
                 }
+                // We create a folder in any case, even if there isn't any file
+                // inside, in order to be fully compatible with any plugin that
+                // manages base filename only.
+                $result = $this->_createArchiveFolders($newArchiveFolder, $path);
+
+                // Determine the current and new derivative filename, standard
+                // or not.
+                $currentDerivativeFilename = $this->_getDerivativeFilename($currentArchiveFilename, $derivativeExtension, $derivativeType);
+                $newDerivativeFilename = $this->_getDerivativeFilename($newArchiveFilename, $derivativeExtension, $derivativeType);
+
                 // Check if the derivative file exists or not to avoid some
                 // errors when moving.
-                if (file_exists(FILES_DIR . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . $currentDerivativeFilename)) {
-                    $result = $this->_createArchiveFolders($newArchiveFolder, $path);
+                if (file_exists($path . DIRECTORY_SEPARATOR . $currentDerivativeFilename)) {
                     $operation = new Omeka_Storage_Adapter_Filesystem(array(
-                        'localDir' => FILES_DIR . DIRECTORY_SEPARATOR . $path,
+                        'localDir' => $path,
                     ));
                     $operation->move($currentDerivativeFilename, $newDerivativeFilename);
                 }
@@ -705,7 +820,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string The sanitized string.
      */
-    private function _sanitizeName($string)
+    protected function _sanitizeName($string)
     {
         $string = strip_tags($string);
         $string = trim($string, ' /\\?<>:*%|"\'`&;');
@@ -724,7 +839,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string The converted string to use as a folder or a file name.
      */
-    private function _convertNameToAscii($string)
+    protected function _convertNameToAscii($string)
     {
         $string = $this->_sanitizeName($string);
         $string = htmlentities($string, ENT_NOQUOTES, 'utf-8');
@@ -744,7 +859,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return array of issues.
      */
-    private function _checkUnicodeInstallation()
+    protected function _checkUnicodeInstallation()
     {
         $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
 

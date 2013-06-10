@@ -7,4 +7,3 @@ avoid names collisions.
 * Adds a field or an element for folder of the item?
 * Manages old files when collection folder changes.
 * Adds tests.
-* Check changes in original folder and update or import new files automatically.

@@ -20,12 +20,11 @@ Uncompress files and rename plugin folder "ArchiveRepertory".
 
 Then install it like any other Omeka plugin and follow the config instructions.
 
-Current release is compatible with Omeka 2.0, but a two lines patch should be
-applied on one file of Omeka core, waiting for its official integration. For
-more information, see the proposed commit [get_derivative_filename].
-
-You can make this patch yourself too. You just need to simplify the line 269 of
-the file `application/models/File.php` (function `getDerivativeFilename()`):
+This plugin is compatible with Omeka 2.1. To make this release compatible with
+Omeka 2.0, a two lines patch should be applied on one file of Omeka core. For
+more information, see the accepted commit [get_derivative_filename]. Or simply
+update the line 269 of the file `application/models/File.php` (function
+`getDerivativeFilename()`):
 replace `$filename = basename($this->filename);`
 with    `$filename = $this->filename;`.
 

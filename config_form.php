@@ -34,6 +34,7 @@
             </p>
         </div>
     </div>
+    <div id='fieldset-collections-list'>
     <?php foreach (loop('collections') as $collection) {
         $id = 'archive_repertory_collection_folder_' . $collection->id; ?>
         <div class="field">
@@ -47,6 +48,7 @@
             </div>
         </div>
     <?php }?>
+    </div>
 </fieldset>
 <fieldset id="fieldset-items"><legend><?php echo __('Items'); ?></legend>
     <div class="field">
@@ -74,29 +76,34 @@
             </select>
         </div>
     </div>
-    <div class="field">
-        <label for="archive_repertory_item_identifier_prefix">
-            <?php echo __('Prefix of item Dublin Core identifier to use'); ?>
-        </label>
-        <div class="inputs">
-            <?php echo get_view()->formText('archive_repertory_item_identifier_prefix', get_option('archive_repertory_item_identifier_prefix'), null); ?>
-            <p class="explanation">
-                <?php echo __('If you choose to use the Dublin Core id, the name of folder of each new item will be the sanitized Dublin Core identifier with the selected prefix, for example "item:", "record:" or "doc:". Let empty to use simply the first item identifier.'); ?>
-            </p>
+    <div id="fieldset-item-prefix">
+        <div class="field">
+            <label for="archive_repertory_item_identifier_prefix">
+                <?php echo __('Prefix of item Dublin Core identifier to use'); ?>
+            </label>
+            <div class="inputs">
+                <?php echo get_view()->formText('archive_repertory_item_identifier_prefix', get_option('archive_repertory_item_identifier_prefix'), null); ?>
+                <p class="explanation">
+                    <?php echo __('Choose a prefix, for example "item:", "record:" or "doc:", to select the appropriate Dublin Core identifier.');
+                    echo ' ' . __('Let empty to use simply the first Dublin Core identifier.'); ?>
+                </p>
+            </div>
         </div>
     </div>
-    <div class="field">
-        <label for="archive_repertory_convert_folder_to_ascii">
-            <?php echo __('Convert folder names to Ascii'); ?>
-        </label>
-        <div class="inputs">
-        <?php echo get_view()->formCheckbox('archive_repertory_convert_folder_to_ascii', TRUE,
-            array('checked' => (boolean) get_option('archive_repertory_convert_folder_to_ascii'))); ?>
-            <p class="explanation">
-                <?php echo __('If checked, Omeka will convert every folder name to its Ascii equivalent. This option depends on the first one.') . '<br />' . PHP_EOL;
-                echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
-                ?>
-            </p>
+    <div id="fieldset-item-ascii">
+        <div class="field">
+            <label for="archive_repertory_convert_folder_to_ascii">
+                <?php echo __('Convert folder names to Ascii'); ?>
+            </label>
+            <div class="inputs">
+            <?php echo get_view()->formCheckbox('archive_repertory_convert_folder_to_ascii', TRUE,
+                array('checked' => (boolean) get_option('archive_repertory_convert_folder_to_ascii'))); ?>
+                <p class="explanation">
+                    <?php echo __('If checked, Omeka will convert every folder name to its Ascii equivalent. This option depends on the first one.') . '<br />' . PHP_EOL;
+                    echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
+                    ?>
+                </p>
+            </div>
         </div>
     </div>
 </fieldset>
@@ -110,7 +117,7 @@
             array('checked' => (boolean) get_option('archive_repertory_keep_original_filename'))); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.') . '<br />' . PHP_EOL;
-                echo '<strong>' . __('Warning') . '</strong>:</br>' . PHP_EOL;
+                echo '<strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
                 echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.');
                 ?>
             </p>
@@ -132,7 +139,7 @@
                     echo __('This server is compatible with Unicode.');
                 }
                 else {
-                    echo '<strong>' . __('Warning') . '</strong>:</br>' . PHP_EOL;
+                    echo '<strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
                     echo __('This server is not fully compatible with Unicode:') . '<br />' . PHP_EOL;
                     if (isset($allowUnicode['cli'])) {
                         echo $allowUnicode['cli'] . '<br />' . PHP_EOL;
@@ -160,3 +167,54 @@
         </div>
     </div>
 </fieldset>
+<fieldset id="fieldset-derivative-folders"><legend><?php echo __('Special derivative folders'); ?></legend>
+    <div class="field">
+        <label for="archive_repertory_derivative_folders">
+            <?php echo __('Other derivative folders'); ?>
+        </label>
+        <div class="inputs">
+            <?php echo get_view()->formText('archive_repertory_derivative_folders', get_option('archive_repertory_derivative_folders'), null); ?>
+            <p class="explanation">
+                <?php echo __('By default, Omeka support three derivative folders: "fullsize", "thumbnails" and "square_thumbnails".');
+                echo ' ' . __('You can add other ones if needed (comma-separated values, like "special_thumbnails, circles").');
+                echo ' ' . __('Folder names should be relative to the files dir "%s".', FILES_DIR);
+                echo '<br />' . PHP_EOL;
+                echo ' ' . __('If a plugin does not use a standard derivative extension (for example ".jpg" for images), you should specified it just after the folder name, separated with a pipe "|", for example "zoom_tiles|_zdata, circles".');
+                echo '<br />' . PHP_EOL;
+                echo ' ' . __('When this option is used, you should not change collection or item identifier and, at the same time, use a feature of the plugin that create derivative files.');
+                echo ' ' . __('In that case, divide your process and change collection or identifier, save item, then use your plugin.')
+                ?>
+            </p>
+        </div>
+    </div>
+</fieldset>
+<script type="text/javascript">
+    var checkboxCollection = document.getElementById("archive_repertory_add_collection_folder");
+    var fieldCollection =  document.getElementById("fieldset-collections-list");
+    checkboxCollection.onclick = function() {
+        if (checkboxCollection.checked) {
+            fieldCollection.style.display = "block";
+        } else {
+            fieldCollection.style.display = "none";
+        }
+    }
+
+    var dropItem = document.getElementById("archive_repertory_item_folder");
+    var fieldPrefix =  document.getElementById("fieldset-item-prefix");
+    var fieldAscii =  document.getElementById("fieldset-item-ascii");
+    dropItem.onclick = function() {
+        if (dropItem.value == "None"){
+            fieldPrefix.style.display = "none";
+            fieldAscii.style.display = "none";
+        } else if (dropItem.value == "id") {
+            fieldPrefix.style.display = "none";
+            fieldAscii.style.display = "none";
+        } else if (dropItem.value == "Dublin Core:Identifier") {
+            fieldPrefix.style.display = "block";
+            fieldAscii.style.display = "block";
+        } else {
+            fieldPrefix.style.display = "none";
+            fieldAscii.style.display = "block";
+        }
+    }
+</script>
