@@ -1,15 +1,25 @@
 <?php
-    echo '<p>' . __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '<br />';
-    echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '</p>';
-    echo '<p><strong>' . __('Warning') . '</strong>:</br>';
-    echo '<ul>';
-    echo '<li>' . __('Currently, changes in these settings affect only new uploaded files. So, after a change, old files will continue to be stored and available as previously.') . '</li>';
-    echo '<li>' . __('Nevertheless, when an item is updated, attached files will follow the current settings, so all files of a record will move and stay together inside the same folder.') . '</li>';
-    echo '<li>' . __('Currently, no check is done on the name of files, so if two files have the same name and are in the same folder, the second will overwrite the first.') . '</li>';
-    echo '<li>' . __('Currently, no check is done on the name of folders, either for collections or for items. No files will be lost if two folders have the same name, but files attached to a record will be mixed in this folder.') . '</li>';
-    echo '<li>' . __('Currently, two lines should be added in Omeka core (2.0) in order to allow a good functioning: see README.') . '</li>';
-    echo '</ul>';
-    echo '</p>';
+    echo '<p>' . __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '<br />' . PHP_EOL;
+
+    if (!$compatible) {
+        echo '<p>';
+        echo '<strong>' . __('WARNING') . '</strong>' . '<br />' . PHP_EOL;
+        echo __('You use an incompatible version of Omeka.') . '<br />' . PHP_EOL;
+        echo __('Currently, two lines should be added in Omeka core (2.0) in order to allow a good functioning: see README.') . '<br />' . PHP_EOL;
+        echo '</p>';
+        echo '<br />';
+        return;
+   }
+
+    echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '</p>' . PHP_EOL;
+    echo '<p><strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
+    echo '<ul>' . PHP_EOL;
+    echo '<li>' . __('Currently, changes in these settings affect only new uploaded files. So, after a change, old files will continue to be stored and available as previously.') . '</li>' . PHP_EOL;
+    echo '<li>' . __('Nevertheless, when an item is updated, attached files will follow the current settings, so all files of a record will move and stay together inside the same folder.') . '</li>' . PHP_EOL;
+    echo '<li>' . __('Currently, no check is done on the name of files, so if two files have the same name and are in the same folder, the second will overwrite the first.') . '</li>' . PHP_EOL;
+    echo '<li>' . __('Currently, no check is done on the name of folders, either for collections or for items. No files will be lost if two folders have the same name, but files attached to a record will be mixed in this folder.') . '</li>' . PHP_EOL;
+    echo '</ul>' . PHP_EOL;
+    echo '</p>' . PHP_EOL;
 ?>
 <fieldset id="fieldset-collections"><legend><?php echo __('Collections'); ?></legend>
     <div class="field">

@@ -131,6 +131,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
         unset($listElements['Dublin Core']);
 
+        // Check compatibility of the plugin with Omeka.
+        include_once BASE_DIR . '/application/models/File.php';
+        $fileTest = new FILE;
+        $fileTest->filename = 'hd1:users/test/v2.1/image.omeka.png';
+        $compatible = ($fileTest->getDerivativeFilename() == 'hd1:users/test/v2.1/image.omeka' . '.' . $fileTest::DERIVATIVE_EXT);
+
+        // Check compatibility of the server with Unicode.
         $allowUnicode = $this->_checkUnicodeInstallation();
 
         require 'config_form.php';
