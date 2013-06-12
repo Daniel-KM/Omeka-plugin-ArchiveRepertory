@@ -39,10 +39,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Items options.
         'archive_repertory_item_folder' => 'id',
         'archive_repertory_item_identifier_prefix' => 'document:',
-        'archive_repertory_convert_folder_to_ascii' => TRUE,
+        'archive_repertory_convert_folder_to_ascii' => 'Full',
         // Files options.
         'archive_repertory_keep_original_filename' => TRUE,
-        'archive_repertory_convert_filename_to_ascii' => FALSE,
+        'archive_repertory_convert_filename_to_ascii' => 'Full',
         'archive_repertory_base_original_filename' => FALSE,
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
@@ -128,7 +128,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $collections = get_records('Collection', array(), 0);
         set_loop_records('collections', $collections);
         $collection_names = unserialize(get_option('archive_repertory_collection_folders'));
-
         $item_folder = get_option('archive_repertory_item_folder');
         // TODO To simplify with the direct function.
         // Get only Dublin Core elements for select form.
@@ -171,9 +170,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('archive_repertory_add_collection_folder', (boolean) $post['archive_repertory_add_collection_folder']);
         set_option('archive_repertory_item_folder', $post['archive_repertory_item_folder']);
         set_option('archive_repertory_item_identifier_prefix', trim($post['archive_repertory_item_identifier_prefix']));
-        set_option('archive_repertory_convert_folder_to_ascii', (boolean) $post['archive_repertory_convert_folder_to_ascii']);
+        set_option('archive_repertory_convert_folder_to_ascii', $post['archive_repertory_convert_folder_to_ascii']);
         set_option('archive_repertory_keep_original_filename', (boolean) $post['archive_repertory_keep_original_filename']);
-        set_option('archive_repertory_convert_filename_to_ascii', (boolean) $post['archive_repertory_convert_filename_to_ascii']);
+        set_option('archive_repertory_convert_filename_to_ascii', $post['archive_repertory_convert_filename_to_ascii']);
         set_option('archive_repertory_base_original_filename', (boolean) $post['archive_repertory_base_original_filename']);
         set_option('archive_repertory_derivative_folders', trim($post['archive_repertory_derivative_folders']));
 
@@ -235,7 +234,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // We don't use original filename here, because this is managed in
             // hookAfterSavefile() when the file is inserted. Here, the filename
             // is already sanitized.
-            $newFilename = $archiveFolder . basename($file->filename);
+            $newFilename = $archiveFolder . $this->_basename_unicode($file->filename);
             if ($file->filename != $newFilename) {
                 $result = $this->_moveFilesInArchiveSubfolders(
                     $file->filename,
@@ -283,15 +282,22 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
             // Keep only basename of original filename in metadata if wanted.
             if (get_option('archive_repertory_base_original_filename')) {
-                $file->original_filename = basename($file->original_filename);
+                $file->original_filename = $this->_basename_unicode($file->original_filename);
             }
 
             // Rename file only if wanted and needed.
             if (get_option('archive_repertory_keep_original_filename')) {
                 // Get the new filename.
-                $newFilename = $this->_sanitizeName(basename($file->original_filename));
-                if (get_option('archive_repertory_convert_filename_to_ascii')) {
-                    $newFilename = $this->_convertNameToAscii($newFilename);
+                $newFilename = $this->_sanitizeName($this->_basename_unicode($file->original_filename));
+                switch (get_option('archive_repertory_convert_filename_to_ascii')) {
+                    case 'Keep name':
+                        break;
+                    case 'First letter':
+                        $newFilename = $this->_convertFirstLetterToAscii($newFilename);
+                        break;
+                    case 'Full':
+                    default:
+                        $newFilename = $this->_convertNameToAscii($newFilename);
                 }
 
                 // Move file only if the name is a new one.
@@ -401,9 +407,15 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 ));
         }
 
-        return (get_option('archive_repertory_convert_folder_to_ascii'))
-            ? $this->_convertNameToAscii($name) . DIRECTORY_SEPARATOR
-            : $name . DIRECTORY_SEPARATOR;
+        switch (get_option('archive_repertory_convert_folder_to_ascii')) {
+            case 'Keep name':
+                return $name . DIRECTORY_SEPARATOR;
+            case 'First letter':
+                return $this->_convertFirstLetterToAscii($name) . DIRECTORY_SEPARATOR;
+            case 'Full':
+            default:
+                return $this->_convertNameToAscii($name) . DIRECTORY_SEPARATOR;
+        }
     }
 
     /**
@@ -833,9 +845,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Returns a sanitized and unaccentued string for folder or file name.
      *
-     * @param string $string The string to convert to ascii.
-     *
      * @see ArchiveRepertoryPlugin::_sanitizeName()
+     *
+     * @param string $string The string to convert to ascii.
      *
      * @return string The converted string to use as a folder or a file name.
      */
@@ -851,6 +863,56 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Returns a sanitized string for folder or file path (first letter only).
+     *
+     * The string should be a simple name, not a full path or url, because "/",
+     * "\" and ":" are removed (so a path should be sanitized by part).
+     *
+     * @internal The string should be already sanitized.
+     *
+     * @see ArchiveRepertoryPlugin::_sanitizeName()
+     *
+     * @param string $string The string to sanitize.
+     *
+     * @return string The sanitized string.
+     */
+    protected function _convertFirstLetterToAscii($string)
+    {
+        $first = $this->_convertNameToAscii($string);
+        if (empty($first)) {
+            return '';
+        }
+        return $first[0] . $this->_substr_unicode($string, 1);
+    }
+
+    /**
+     * Get a sub string from a string when mb_substr is not available.
+     *
+     * @see http://www.php.net/manual/en/function.mb-substr.php#107698
+     *
+     * @param string $string
+     * @param integer $start
+     * @param integer $length (optional)
+     *
+     * @return string
+     */
+    protected function _substr_unicode($string, $start, $length = null) {
+        return join('', array_slice(
+            preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
+    }
+
+    /**
+     * Get the base of a filename when it starts with an Unicode character.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    protected function _basename_unicode($path) {
+        return preg_replace( '/^.+[\\\\\\/]/', '', $path);
+    }
+
+    /**
      * Checks if all the system (server + php + web environment) allows to
      * manage Unicode filename securely.
      *
@@ -861,6 +923,15 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _checkUnicodeInstallation()
     {
+        $result = array();
+
+        // First character check.
+        $filename = 'éfilé.jpg';
+        if (basename($filename) != $filename) {
+            $result['ascii'] = __('An error occurs when testing function "basename(\'%s\')".', $filename);
+        }
+
+        // Command line via web check (compare with the trivial function below).
         $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
 
         /**
@@ -872,17 +943,14 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
           return "'" . str_replace("'", "'\\''", $string) . "'";
         }
 
-        $result = array();
-
-        // Command line via web check.
         if (escapeshellarg($filename) != escapeshellarg_special($filename)) {
-            $result['cli'] = __('- An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
+            $result['cli'] = __('An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
         }
 
         // File system check.
         $filepath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $filename;
         if (!(touch($filepath) && file_exists($filepath))) {
-            $result['fs'] = __('- A file system error occurs when testing function "touch \'%s\'".', $filepath);
+            $result['fs'] = __('A file system error occurs when testing function "touch \'%s\'".', $filepath);
         }
 
         return $result;

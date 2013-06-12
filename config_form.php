@@ -12,6 +12,33 @@
    }
 
     echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '</p>' . PHP_EOL;
+
+    echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...) when the character encoding of the server is the same than the web environment.');
+    echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />' . PHP_EOL;
+    if (empty($allowUnicode)) {
+        echo '<p>' . __('This server is compatible with Unicode.') . '</p>';
+    }
+    else {
+        echo '<p><strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
+        echo __('This server is not fully compatible with Unicode:') . '<br />' . PHP_EOL;
+        echo '<ul>';
+        if (isset($allowUnicode['ascii'])) {
+            echo '<li>' . $allowUnicode['ascii'] . '</li>' . PHP_EOL;
+            echo ' ' . __('Use only an Ascii character as first character of your filenames or set the option "Convert first character of filename".') . '<br />' . PHP_EOL;
+        }
+        if (isset($allowUnicode['cli'])) {
+            echo '<li>' . $allowUnicode['cli'] . '</li>' . PHP_EOL;
+            echo __('Usually, this is not a problem with this plugin and common plugins.');
+            echo ' ' . __('But if you use a plugin that calls a program via the command line of the server, filenames issues can occur.') . '<br />' . PHP_EOL;
+        }
+        if (isset($allowUnicode['fs'])) {
+            echo '<li>' . $allowUnicode['fs'] . '</li>' . PHP_EOL;
+            echo __('It is strongly recommanded to convert your filename to ascii.') . '<br />' . PHP_EOL;
+        }
+        echo '</ul>' . PHP_EOL;
+        echo '</p>' . PHP_EOL;
+    }
+
     echo '<p><strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
     echo '<ul>' . PHP_EOL;
     echo '<li>' . __('Currently, changes in these settings affect only new uploaded files. So, after a change, old files will continue to be stored and available as previously.') . '</li>' . PHP_EOL;
@@ -96,10 +123,17 @@
                 <?php echo __('Convert folder names to Ascii'); ?>
             </label>
             <div class="inputs">
-            <?php echo get_view()->formCheckbox('archive_repertory_convert_folder_to_ascii', TRUE,
-                array('checked' => (boolean) get_option('archive_repertory_convert_folder_to_ascii'))); ?>
+            <?php echo get_view()->formRadio('archive_repertory_convert_folder_to_ascii',
+                get_option('archive_repertory_convert_folder_to_ascii'),
+                null,
+                array(
+                    'Keep name' => __('Keep name as it') . (isset($allowUnicode['ascii']) ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)') : ''),
+                    'First letter' => __('Convert first letter only'),
+                    'Full' => __('Full conversion to Ascii'),
+                )); ?>
                 <p class="explanation">
-                    <?php echo __('If checked, Omeka will convert every folder name to its Ascii equivalent. This option depends on the first one.') . '<br />' . PHP_EOL;
+                    <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every folder to its Ascii equivalent (or only the first letter).');
+                    echo ' ' . __('This option depends on the first one.') . '<br />' . PHP_EOL;
                     echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                     ?>
                 </p>
@@ -125,32 +159,22 @@
     </div>
     <div class="field">
         <label for="archive_repertory_convert_filename_to_ascii">
-            <?php echo __('Convert Unicode filenames to Ascii'); ?>
+            <?php echo __('Convert folder names to Ascii'); ?>
         </label>
         <div class="inputs">
-        <?php echo get_view()->formCheckbox('archive_repertory_convert_filename_to_ascii', TRUE,
-            array('checked' => (boolean) get_option('archive_repertory_convert_filename_to_ascii'))); ?>
+        <?php echo get_view()->formRadio('archive_repertory_convert_filename_to_ascii',
+            get_option('archive_repertory_convert_filename_to_ascii'),
+            null,
+            array(
+                'Keep name' => __('Keep name as it') . (isset($allowUnicode['ascii']) ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)') : ''),
+                'First letter' => __('Convert first letter only'),
+                'Full' => __('Full conversion to Ascii'),
+            )); ?>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will convert every filename to its Ascii equivalent. This option depends on the first one.') . '<br />' . PHP_EOL;
-                echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.') . '<br />' . PHP_EOL;
-                echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...) when the character encoding of the server is the same than the web environment.');
-                echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />' . PHP_EOL;
-                if (empty($allowUnicode)) {
-                    echo __('This server is compatible with Unicode.');
-                }
-                else {
-                    echo '<strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
-                    echo __('This server is not fully compatible with Unicode:') . '<br />' . PHP_EOL;
-                    if (isset($allowUnicode['cli'])) {
-                        echo $allowUnicode['cli'] . '<br />' . PHP_EOL;
-                        echo __('Usually, this is not a problem with this plugin and common plugins.');
-                        echo ' ' . __('But if you use a plugin that calls a program via the command line of the server, filenames issues can occur.') . '<br />' . PHP_EOL;
-                    }
-                    if (isset($allowUnicode['fs'])) {
-                        echo $allowUnicode['fs'] . '<br />' . PHP_EOL;
-                        echo __('It is strongly recommanded to convert your filename to ascii.') . '<br />' . PHP_EOL;
-                    }
-                } ?>
+                <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every file to its Ascii equivalent (or only the first letter).');
+                echo ' ' . __('This option depends on the first one.') . '<br />' . PHP_EOL;
+                echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
+                ?>
             </p>
         </div>
     </div>
