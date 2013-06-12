@@ -826,7 +826,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $string = trim($string, ' /\\?<>:*%|"\'`&;');
         $string = preg_replace('/[\(\{]/', '[', $string);
         $string = preg_replace('/[\)\}]/', ']', $string);
-        $string = preg_replace('/[[:cntrl:]\/\\\_\?<>:\*\%\|\"\'`\&\;#+\^\$\s]/', ' ', $string);
+        $string = preg_replace('/[[:cntrl:]\/\\\?<>:\*\%\|\"\'`\&\;#+\^\$\s]/', ' ', $string);
         return substr(preg_replace('/\s+/', ' ', $string), -250);
     }
 
