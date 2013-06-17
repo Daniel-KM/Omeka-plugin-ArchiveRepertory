@@ -289,16 +289,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             if (get_option('archive_repertory_keep_original_filename')) {
                 // Get the new filename.
                 $newFilename = $this->_sanitizeName($this->_basename_unicode($file->original_filename));
-                switch (get_option('archive_repertory_convert_filename_to_ascii')) {
-                    case 'Keep name':
-                        break;
-                    case 'First letter':
-                        $newFilename = $this->_convertFirstLetterToAscii($newFilename);
-                        break;
-                    case 'Full':
-                    default:
-                        $newFilename = $this->_convertNameToAscii($newFilename);
-                }
+                $newFilename = $this->_convertFilenameTo($newFilename, get_option('archive_repertory_convert_filename_to_ascii'));
 
                 // Move file only if the name is a new one.
                 $item = $file->getItem();
@@ -407,15 +398,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 ));
         }
 
-        switch (get_option('archive_repertory_convert_folder_to_ascii')) {
-            case 'Keep name':
-                return $name . DIRECTORY_SEPARATOR;
-            case 'First letter':
-                return $this->_convertFirstLetterToAscii($name) . DIRECTORY_SEPARATOR;
-            case 'Full':
-            default:
-                return $this->_convertNameToAscii($name) . DIRECTORY_SEPARATOR;
-        }
+        return $this->_convertFilenameTo($name, get_option('archive_repertory_convert_folder_to_ascii')) . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -843,17 +826,50 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Returns a sanitized and unaccentued string for folder or file name.
+     * Returns a formatted string for folder or file name.
      *
+     * @internal The string should be already sanitized.
+     * The string should be a simple name, not a full path or url, because "/",
+     * "\" and ":" are removed (so a path should be sanitized by part).
+     *      *
      * @see ArchiveRepertoryPlugin::_sanitizeName()
+     *
+     * @param string $string The string to sanitize.
+     * @param string $format The format to convert to.
+     *
+     * @return string The sanitized string.
+     */
+    protected function _convertFilenameTo($string, $format)
+    {
+        switch ($format) {
+            case 'Keep name':
+                return $string;
+            case 'First letter':
+                return $this->_convertFirstLetterToAscii($string);
+            case 'Spaces':
+                return $this->_convertSpacesToUnderscore($string);
+            case 'First and spaces':
+                $string = $this->_convertFilenameTo($string, 'First letter');
+                return $this->_convertSpacesToUnderscore($string);
+            case 'Full':
+            default:
+                return $this->_convertNameToAscii($string);
+        }
+    }
+
+    /**
+     * Returns an unaccentued string for folder or file name.
+     *
+     * @internal The string should be already sanitized.
+     *
+     * @see ArchiveRepertoryPlugin::_convertFilenameTo()
      *
      * @param string $string The string to convert to ascii.
      *
      * @return string The converted string to use as a folder or a file name.
      */
-    protected function _convertNameToAscii($string)
+    private function _convertNameToAscii($string)
     {
-        $string = $this->_sanitizeName($string);
         $string = htmlentities($string, ENT_NOQUOTES, 'utf-8');
         $string = preg_replace('#\&([A-Za-z])(?:acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml)\;#', '\1', $string);
         $string = preg_replace('#\&([A-Za-z]{2})(?:lig)\;#', '\1', $string);
@@ -863,26 +879,39 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Returns a sanitized string for folder or file path (first letter only).
-     *
-     * The string should be a simple name, not a full path or url, because "/",
-     * "\" and ":" are removed (so a path should be sanitized by part).
+     * Returns a formatted string for folder or file path (first letter only).
      *
      * @internal The string should be already sanitized.
      *
-     * @see ArchiveRepertoryPlugin::_sanitizeName()
+     * @see ArchiveRepertoryPlugin::_convertFilenameTo()
      *
      * @param string $string The string to sanitize.
      *
      * @return string The sanitized string.
      */
-    protected function _convertFirstLetterToAscii($string)
+    private function _convertFirstLetterToAscii($string)
     {
         $first = $this->_convertNameToAscii($string);
         if (empty($first)) {
             return '';
         }
         return $first[0] . $this->_substr_unicode($string, 1);
+    }
+
+    /**
+     * Returns a formatted string for folder or file path (spaces only).
+     *
+     * @internal The string should be already sanitized.
+     *
+     * @see ArchiveRepertoryPlugin::_convertFilenameTo()
+     *
+     * @param string $string The string to sanitize.
+     *
+     * @return string The sanitized string.
+     */
+    private function _convertSpacesToUnderscore($string)
+    {
+        return preg_replace('/\s+/', '_', $string);
     }
 
     /**

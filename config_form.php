@@ -120,16 +120,24 @@
     <div id="fieldset-item-ascii">
         <div class="field">
             <label for="archive_repertory_convert_folder_to_ascii">
-                <?php echo __('Convert folder names to Ascii'); ?>
+                <?php echo __('Convert folder names'); ?>
             </label>
             <div class="inputs">
             <?php echo get_view()->formRadio('archive_repertory_convert_folder_to_ascii',
                 get_option('archive_repertory_convert_folder_to_ascii'),
                 null,
                 array(
-                    'Keep name' => __('Keep name as it') . (isset($allowUnicode['ascii']) ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)') : ''),
+                    'Keep name' => __('Keep name as it')
+                        . (isset($allowUnicode['ascii'])
+                            ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)')
+                            : ''),
                     'First letter' => __('Convert first letter only'),
-                    'Full' => __('Full conversion to Ascii'),
+                    'Spaces' => __('Convert spaces to underscores'),
+                    'First and spaces' => __('Convert first letter and spaces'),
+                    'Full' => __('Full conversion to Ascii')
+                        . ((isset($allowUnicode['cli']) || isset($allowUnicode['fs']))
+                            ? ' (' . __('recommended because your server is not fully compatible with Unicode') . ')'
+                            : ''),
                 )); ?>
                 <p class="explanation">
                     <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every folder to its Ascii equivalent (or only the first letter).');
@@ -159,16 +167,24 @@
     </div>
     <div class="field">
         <label for="archive_repertory_convert_filename_to_ascii">
-            <?php echo __('Convert folder names to Ascii'); ?>
+            <?php echo __('Convert filenames'); ?>
         </label>
         <div class="inputs">
         <?php echo get_view()->formRadio('archive_repertory_convert_filename_to_ascii',
             get_option('archive_repertory_convert_filename_to_ascii'),
             null,
             array(
-                'Keep name' => __('Keep name as it') . (isset($allowUnicode['ascii']) ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)') : ''),
+                'Keep name' => __('Keep name as it')
+                    . (isset($allowUnicode['ascii'])
+                        ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)')
+                        : ''),
                 'First letter' => __('Convert first letter only'),
-                'Full' => __('Full conversion to Ascii'),
+                'Spaces' => __('Convert spaces to underscores'),
+                'First and spaces' => __('Convert first letter and spaces'),
+                'Full' => __('Full conversion to Ascii')
+                    . ((isset($allowUnicode['cli']) || isset($allowUnicode['fs']))
+                        ? ' (' . __('recommended because your server is not fully compatible with Unicode') . ')'
+                        : ''),
             )); ?>
             <p class="explanation">
                 <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every file to its Ascii equivalent (or only the first letter).');
