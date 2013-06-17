@@ -50,10 +50,6 @@ images or to get mime type from files. After, you have four possibilities:
 - replace every `escapeshellarg()` (present in eight files in Omeka core) with
 `escapeshellarg_special()`.
 
-The problem can occur with `basename()` too, more rarely, when the first letter
-is a non Ascii one. Solution are the same. You can replace `basename()` with
-`basename_special()`.
-
 
 Warning
 -------
