@@ -44,22 +44,15 @@ the php function "escapeshellarg()", largely used in Omeka. The problem occurs
 only when Omeka uses command line interface, in particular to create derivative
 images or to get mime type from files. After, you have four possibilities:
 
-- use only filenames with standard Ascii characters;
+- use only folder and file names with standard Ascii characters;
 - set options to auto convert files and folders names to Ascii;
 - change the configuration of the server if you have access to it;
 - replace every `escapeshellarg()` (present in eight files in Omeka core) with
-`escapeshellarg_special()` and add the following code in `application/libraries/globals.php`:
+`escapeshellarg_special()`.
 
-```
-/**
- * An ugly, non-ASCII-character safe replacement of escapeshellarg().
- *
- * @see http://www.php.net/manual/function.escapeshellarg.php
- */
-function escapeshellarg_special($string) {
-  return "'" . str_replace("'", "'\\''", $string) . "'";
-}
-```
+The problem can occur with `basename()` too, more rarely, when the first letter
+is a non Ascii one. Solution are the same. You can replace `basename()` with
+`basename_special()`.
 
 
 Warning
@@ -67,11 +60,13 @@ Warning
 
 Use it at your own risk.
 
-It's always recommended to backup your database so you can roll back if needed.
+It's always recommended to backup your files and database so you can roll back
+if needed.
 
 Furthermore, currently, no check is done on the name of files, so if two files
 have the same name and are in the same folder, the second will overwrite the
 first.
+
 
 Troubleshooting
 ---------------
@@ -110,6 +105,7 @@ Current maintainers:
 * Daniel Berthereau (see [Daniel-KM] on GitHub)
 
 First version of this plugin has been built for [École des Ponts ParisTech].
+The upgrade for Omeka 2.0 has been built for [Mines ParisTech].
 
 
 Copyright
@@ -124,4 +120,5 @@ Copyright
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
 [Daniel-KM]: http://github.com/Daniel-KM "Daniel Berthereau"
 [École des Ponts ParisTech]: http://bibliotheque.enpc.fr "École des Ponts ParisTech / ENPC"
+[Mines ParisTech]: http://bib.mines-paristech.fr "Mines ParisTech / ENSMP"
 [get_derivative_filename]: https://github.com/Daniel-KM/Omeka/commit/f716af19b3be6d7e0ca77d36c08e409c4935b61c "commit get_derivative_filename"

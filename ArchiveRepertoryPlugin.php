@@ -7,6 +7,8 @@
  * @package ArchiveRepertory
  */
 
+require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . 'ArchiveRepertoryFunctions.php';
+
 /**
  * Contains code used to integrate the plugin into Omeka.
  *
@@ -234,7 +236,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // We don't use original filename here, because this is managed in
             // hookAfterSavefile() when the file is inserted. Here, the filename
             // is already sanitized.
-            $newFilename = $archiveFolder . $this->_basename_unicode($file->filename);
+            $newFilename = $archiveFolder . basename_special($file->filename);
             if ($file->filename != $newFilename) {
                 $result = $this->_moveFilesInArchiveSubfolders(
                     $file->filename,
@@ -282,13 +284,14 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
             // Keep only basename of original filename in metadata if wanted.
             if (get_option('archive_repertory_base_original_filename')) {
-                $file->original_filename = $this->_basename_unicode($file->original_filename);
+                $file->original_filename = basename_special($file->original_filename);
             }
 
             // Rename file only if wanted and needed.
             if (get_option('archive_repertory_keep_original_filename')) {
                 // Get the new filename.
-                $newFilename = $this->_sanitizeName($this->_basename_unicode($file->original_filename));
+                $newFilename = basename_special($file->original_filename);
+                $newFilename = $this->_sanitizeName($newFilename);
                 $newFilename = $this->_convertFilenameTo($newFilename, get_option('archive_repertory_convert_filename_to_ascii'));
 
                 // Move file only if the name is a new one.
@@ -931,17 +934,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Get the base of a filename when it starts with an Unicode character.
-     *
-     * @param string $path
-     *
-     * @return string
-     */
-    protected function _basename_unicode($path) {
-        return preg_replace( '/^.+[\\\\\\/]/', '', $path);
-    }
-
-    /**
      * Checks if all the system (server + php + web environment) allows to
      * manage Unicode filename securely.
      *
@@ -962,15 +954,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Command line via web check (compare with the trivial function below).
         $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
-
-        /**
-         * An ugly, non-ASCII-character safe replacement of escapeshellarg().
-         *
-         * @see http://www.php.net/manual/function.escapeshellarg.php
-         */
-        function escapeshellarg_special($string) {
-          return "'" . str_replace("'", "'\\''", $string) . "'";
-        }
 
         if (escapeshellarg($filename) != escapeshellarg_special($filename)) {
             $result['cli'] = __('An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
