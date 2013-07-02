@@ -505,7 +505,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         // Default name is the first word of the collection name.
-        $defaultName = trim(strtok(trim(metadata($collection, array('Dublin Core', 'Title'))), " \n\r\t"));
+        $view = new Omeka_View_Helper_Metadata;
+        $title = $view->metadata($collection, array('Dublin Core', 'Title'));
+        $defaultName = trim(strtok(trim($title), " \n\r\t"));
 
         // If this name is already used, the id is added until name is unique.
         While (in_array($defaultName, $collectionNames)) {
@@ -528,7 +530,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _createRecordFolderName($record, $metadata)
     {
-        $identifier = metadata($record, $metadata, 0);
+        $view = new Omeka_View_Helper_Metadata;
+        $identifier = $view->metadata($record, $metadata, 0);
         return empty($identifier)
             ? (string) $record->id
             : $this->_sanitizeName($identifier);
@@ -579,7 +582,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     private function _createRecordFolderNameFromDCidentifier($record, $prefix)
     {
-        $identifiers = metadata($record, array('Dublin Core', 'Identifier'), 'all');
+        $view = new Omeka_View_Helper_Metadata;
+        $identifiers = $view->metadata($record, array('Dublin Core', 'Identifier'), 'all');
         if (empty($identifiers)) {
             return (string) $record->id;
         }
@@ -610,11 +614,11 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         static $prefix_len;
 
         if ($prefix === null) {
-            $prefix = get_option('archive_repertory_item_identifier_prefix');
+            $prefix = strtolower(get_option('archive_repertory_item_identifier_prefix'));
             $prefix_len = strlen($prefix);
         }
 
-        return (substr($identifier, 0, $prefix_len) == $prefix);
+        return (strtolower(substr($identifier, 0, $prefix_len)) == $prefix);
     }
 
     /**
@@ -931,7 +935,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _sanitizeName($string)
     {
         $string = strip_tags($string);
-        $string = trim($string, ' /\\?<>:*%|"\'`&;');
+        // The first character is a space and the last one is a no-break space.
+        $string = trim($string, ' /\\?<>:*%|"\'`&; ');
         $string = preg_replace('/[\(\{]/', '[', $string);
         $string = preg_replace('/[\)\}]/', ']', $string);
         $string = preg_replace('/[[:cntrl:]\/\\\?<>:\*\%\|\"\'`\&\;#+\^\$\s]/', ' ', $string);
