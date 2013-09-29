@@ -20,11 +20,10 @@ Uncompress files and rename plugin folder "ArchiveRepertory".
 
 Then install it like any other Omeka plugin and follow the config instructions.
 
-This plugin is compatible with Omeka 2.1. To make this release compatible with
-Omeka 2.0, a two lines patch should be applied on one file of Omeka core. For
-more information, see the accepted commit [get_derivative_filename]. Or simply
-update the line 269 of the file `application/models/File.php` (function
-`getDerivativeFilename()`):
+To make this release compatible with versions of Omeka earlier than 2.0.4, a two
+lines patch should be applied on one file of Omeka core. For more information,
+see the accepted commit [get_derivative_filename]. Or simply update the line 269
+of the file `application/models/File.php` (function `getDerivativeFilename()`):
 replace `$filename = basename($this->filename);`
 with    `$filename = $this->filename;`.
 
@@ -42,13 +41,22 @@ file with a Unicode name.
 If derivative files with non Ascii names are not created, check the behavior of
 the php function "escapeshellarg()", largely used in Omeka. The problem occurs
 only when Omeka uses command line interface, in particular to create derivative
-images or to get mime type from files. After, you have four possibilities:
+images or to get mime type from files. After, you have five possibilities:
 
 - use only folder and file names with standard Ascii characters;
 - set options to auto convert files and folders names to Ascii;
-- change the configuration of the server if you have access to it;
+- change the configuration of the server if you have access to it
+    To change an Apache server configuration, simply uncomment a line in the
+    file "envvars" in order to use the system default locale, and add this
+    just below to avoid numerical issues:
+    `export LC_NUMERIC=C`
+- add this in the beginning the "bootstrap.php" of Omeka (with your locale):
+    `setlocale(LC_CTYPE, 'fr_FR.UTF-8');`
+    `setlocale(LC_COLLATE, 'fr_FR.UTF-8');`
+    Avoid `setlocale(LC_ALL, 'fr_FR.UTF-8')`, and keep numerical values as "C":
+    `setlocale(LC_NUMERIC, 'C');`
 - replace every `escapeshellarg()` (present in eight files in Omeka core) with
-`escapeshellarg_special()`.
+`escapeshellarg_special()` and every `basename()` with `basename_special()`.
 
 
 Warning
@@ -73,8 +81,8 @@ See online issues on the [Archive Repertory issues] page on GitHub.
 License
 -------
 
-This plugin is published under the [CeCILL v2] licence, compatible with
-[GNU/GPL].
+This plugin is published under the [CeCILL v2.1] licence, compatible with
+[GNU/GPL] and approved by [FSF] and [OSI].
 
 In consideration of access to the source code and the rights to copy, modify and
 redistribute granted by the license, users are provided only with a limited
@@ -112,8 +120,10 @@ Copyright
 
 [Omeka]: http://www.omeka.org "Omeka.org"
 [Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/Issues "GitHub Archive Repertory"
-[CeCILL v2]: http://www.cecill.info/licences/Licence_CeCILL_V2-en.html "CeCILL v2"
+[CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html "CeCILL v2.1"
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
+[FSF]: https://www.fsf.org
+[OSI]: http://opensource.org
 [Daniel-KM]: http://github.com/Daniel-KM "Daniel Berthereau"
 [École des Ponts ParisTech]: http://bibliotheque.enpc.fr "École des Ponts ParisTech / ENPC"
 [Mines ParisTech]: http://bib.mines-paristech.fr "Mines ParisTech / ENSMP"

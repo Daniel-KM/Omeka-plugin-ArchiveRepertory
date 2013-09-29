@@ -4,13 +4,13 @@
     if (!$compatible) {
         echo '<p><strong>' . __('Warning') . '</strong></p>' . PHP_EOL;
         echo __('You use an incompatible version of Omeka.') . '<br />' . PHP_EOL;
-        echo __('Currently, two lines should be added in Omeka core (2.0) in order to allow a good functioning: see README.') . '<br />' . PHP_EOL;
+        echo __('Upgrade to Omeka 2.04 or add two lines in Omeka core in order to allow a good functioning (see "readme.md").') . '<br />' . PHP_EOL;
         echo '<br />';
         return;
     }
 
     echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '<br />' . PHP_EOL;
-    echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...) when the character encoding of the server is the same than the web environment.');
+    echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...). In case of issues, see "readme.md".');
     echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />' . PHP_EOL;
     if (empty($allowUnicode)) {
         echo '<p>' . __('This server is compatible with Unicode.') . '</p>';
@@ -111,8 +111,8 @@
                     . (isset($allowUnicode['ascii'])
                         ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)')
                         : ''),
-                'First letter' => __('Convert first letter only'),
                 'Spaces' => __('Convert spaces to underscores'),
+                'First letter' => __('Convert first letter only'),
                 'First and spaces' => __('Convert first letter and spaces'),
                 'Full' => __('Full conversion to Ascii')
                     . ((isset($allowUnicode['cli']) || isset($allowUnicode['fs']))
@@ -179,8 +179,8 @@
                     . (isset($allowUnicode['ascii'])
                         ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)')
                         : ''),
-                'First letter' => __('Convert first letter only'),
                 'Spaces' => __('Convert spaces to underscores'),
+                'First letter' => __('Convert first letter only'),
                 'First and spaces' => __('Convert first letter and spaces'),
                 'Full' => __('Full conversion to Ascii')
                     . ((isset($allowUnicode['cli']) || isset($allowUnicode['fs']))
@@ -225,8 +225,8 @@
                     . (isset($allowUnicode['ascii'])
                         ? ' ' . __('(not recommended because your server is not fully compatible with Unicode)')
                         : ''),
-                'First letter' => __('Convert first letter only'),
                 'Spaces' => __('Convert spaces to underscores'),
+                'First letter' => __('Convert first letter only'),
                 'First and spaces' => __('Convert first letter and spaces'),
                 'Full' => __('Full conversion to Ascii')
                     . ((isset($allowUnicode['cli']) || isset($allowUnicode['fs']))

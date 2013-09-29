@@ -1,18 +1,18 @@
 <?php
 /**
+ * Archive Repertory
+ *
  * Keeps original names of files and put them in a hierarchical structure.
  *
  * @copyright Daniel Berthereau, 2012-2013
- * @license http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
- * @package ArchiveRepertory
+ * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
 
 require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . 'ArchiveRepertoryFunctions.php';
 
 /**
- * Contains code used to integrate the plugin into Omeka.
- *
- * @package ArchiveRepertory
+ * The Archive Repertory plugin.
+ * @package Omeka\Plugins\ArchiveRepertory
  */
 class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 {
@@ -420,8 +420,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 return '';
             default:
                 $name = $this->_createRecordFolderName($item, array(
-                    substr($item_folder, 0, strrpos($item_folder, ':')),
-                    substr($item_folder, strrpos($item_folder, ':') + 1),
+                    trim(substr($item_folder, 0, strrpos($item_folder, ':'))),
+                    trim(substr($item_folder, strrpos($item_folder, ':') + 1)),
                 ));
         }
 
@@ -470,8 +470,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 break;
             default:
                 $collectionName = $this->_createRecordFolderName($collection, array(
-                    substr($collection_folder, 0, strrpos($collection_folder, ':')),
-                    substr($collection_folder, strrpos($collection_folder, ':') + 1),
+                    trim(substr($collection_folder, 0, strrpos($collection_folder, ':'))),
+                    trim(substr($collection_folder, strrpos($collection_folder, ':') + 1)),
                 ));
                 break;
         }
@@ -505,8 +505,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         // Default name is the first word of the collection name.
-        $view = new Omeka_View_Helper_Metadata;
-        $title = $view->metadata($collection, array('Dublin Core', 'Title'));
+        $title = $collection->getElementTexts('Dublin Core', 'Title');
+        $title = isset($title[0]) ? $title[0]->text : '';
         $defaultName = trim(strtok(trim($title), " \n\r\t"));
 
         // If this name is already used, the id is added until name is unique.
@@ -530,8 +530,14 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _createRecordFolderName($record, $metadata)
     {
-        $view = new Omeka_View_Helper_Metadata;
-        $identifier = $view->metadata($record, $metadata, 0);
+        if (is_array($metadata)) {
+            $metadata = array_values($metadata);
+            $identifier = $record->getElementTexts($metadata[0], $metadata[1]);
+            $identifier = isset($identifier[0]) ? $identifier[0]->text : '';
+        }
+        else {
+            $identifier = $record->getProperty($metadata);
+        }
         return empty($identifier)
             ? (string) $record->id
             : $this->_sanitizeName($identifier);
@@ -582,13 +588,15 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     private function _createRecordFolderNameFromDCidentifier($record, $prefix)
     {
-        $view = new Omeka_View_Helper_Metadata;
-        $identifiers = $view->metadata($record, array('Dublin Core', 'Identifier'), 'all');
+        $identifiers = $record->getElementTexts('Dublin Core', 'Identifier');
         if (empty($identifiers)) {
             return (string) $record->id;
         }
 
         // Get all identifiers with the chosen prefix in case they are multiple.
+        foreach ($identifiers as $key => $identifier) {
+            $identifiers[$key] = $identifier->text;
+        }
         $filtered_identifiers = array_values(array_filter($identifiers, 'self::_filteredIdentifier'));
         if (!isset($filtered_identifiers[0])) {
             return (string) $record->id;
