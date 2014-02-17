@@ -50,6 +50,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'archive_repertory_file_base_original_name' => FALSE,
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
+        // Max download without captcha (default to 30 MB).
+        'archive_repertory_download_max_free_download' => 30000000,
+        'archive_repertory_legal_text' => 'I agree with terms of use.',
     );
 
     /**
@@ -168,7 +171,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         include_once BASE_DIR . '/application/models/File.php';
         $fileTest = new FILE;
         $fileTest->filename = 'hd1:users/test/v2.1/image.omeka.png';
-        $compatible = ($fileTest->getDerivativeFilename() == 'hd1:users/test/v2.1/image.omeka' . '.' . $fileTest::DERIVATIVE_EXT);
+        $compatible = ($fileTest->getDerivativeFilename() == 'hd1:users/test/v2.1/image.omeka' . '.' . FILE::DERIVATIVE_EXT);
 
         // Check compatibility of the server with Unicode.
         $allowUnicode = $this->_checkUnicodeInstallation();
@@ -196,6 +199,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         set_option('archive_repertory_file_convert_name', $post['archive_repertory_file_convert_name']);
         set_option('archive_repertory_file_base_original_name', (boolean) $post['archive_repertory_file_base_original_name']);
         set_option('archive_repertory_derivative_folders', trim($post['archive_repertory_derivative_folders']));
+        set_option('archive_repertory_warning_max_size_download', (integer) ($post['archive_repertory_warning_max_size_download']));
+        set_option('archive_repertory_legal_text', trim ($post['archive_repertory_legal_text']));
 
         // Unlike items, collections are few and stable, so they are kept as an
         // option.

@@ -59,6 +59,31 @@ images or to get mime type from files. After, you have five possibilities:
 `escapeshellarg_special()` and every `basename()` with `basename_special()`.
 
 
+Protecting your files
+---------------------
+
+This plugin simplifies direct access to your files. That's not a main issue if
+they are in public domain or you don't care about hotlinking and bandwidth
+theft. If you want to protect them, you can adapt the following code to your
+needs and it in your root ".htaccess" file, or in a ".htaccess" file in the
+"files" folder or in the "files/original" folder:
+
+```
+Options +FollowSymlinks
+RewriteEngine on
+RewriteRule ^files/original/(.*)$ http://www.example.com/archive-repertory/download/file?filename=$1 [NC,L]
+```
+
+In this example, all original files will be protected: a check will be done by
+the plugin before to deliver files. If the size of the file is bigger than a
+specified size, set in the configuration page of the plugin, a confirmation
+page will be displayed. The "mode" argument allows to set the download mode:
+"inline" (default if no confirmation), "attachment" (always when a confirmation
+is needed), "size", "image" or "image-size", according to your needs.
+The file type is "original" by default, but other ones (fullsize...) can be
+used. Note that if a confirmation is needed, the site may be unusable.
+
+
 Warning
 -------
 
@@ -115,7 +140,7 @@ The upgrade for Omeka 2.0 has been built for [Mines ParisTech].
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2012-2013
+* Copyright Daniel Berthereau, 2012-2014
 
 
 [Omeka]: http://www.omeka.org "Omeka.org"

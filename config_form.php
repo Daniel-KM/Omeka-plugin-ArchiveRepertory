@@ -1,3 +1,12 @@
+<?php echo js_tag('vendor/tiny_mce/tiny_mce'); ?>
+<script type="text/javascript">
+jQuery(window).load(function () {
+  Omeka.wysiwyg({
+    mode: 'specific_textareas',
+    editor_selector: 'html-editor'
+  });
+});
+</script>
 <?php
     echo '<p>' . __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '</p>' . PHP_EOL;
 
@@ -272,6 +281,44 @@
                 echo ' ' . __('In that case, divide your process and change collection or identifier, save item, then use your plugin.')
                 ?>
             </p>
+        </div>
+    </div>
+</fieldset>
+<fieldset id="fieldset-max-download"><legend><?php echo __('Maximum downloads by user'); ?></legend>
+    <div class="field">
+        <div class="two columns alpha">
+            <label for="archive_repertory_warning_max_size_download">
+                <?php echo __('Maximum size without captcha'); ?>
+            </label>
+        </div>
+        <div class='inputs five columns omega'>
+            <?php echo get_view()->formText('archive_repertory_warning_max_size_download', get_option('archive_repertory_warning_max_size_download'), null); ?>
+            <p class="explanation">
+                <?php echo __('Above this size, a captcha will be added to avoid too many downloads from a user.'); ?>
+                <?php echo ' ' . __('Set a very high size to allow all files to be downloaded.'); ?>
+            </p>
+        </div>
+    </div>
+    <div class='field'>
+        <div class="two columns alpha">
+            <label><?php echo __('Legal agreement'); ?></label>
+        </div>
+        <div class='inputs five columns omega'>
+            <div class='input-block'>
+                <?php echo get_view()->formTextarea(
+                    'archive_repertory_legal_text',
+                    get_option('archive_repertory_legal_text'),
+                    array(
+                        'rows' => 5,
+                        'cols' => 60,
+                        'class' => array('textinput', 'html-editor'),
+                     )
+                ); ?>
+                <p class="explanation">
+                    <?php echo __('This text will be shown beside the legal checkbox to download a file.'); ?>
+                    <?php echo ' ' . __("Let empty if you don't want to use a legal agreement."); ?>
+                </p>
+            </div>
         </div>
     </div>
 </fieldset>
