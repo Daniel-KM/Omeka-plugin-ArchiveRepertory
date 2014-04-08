@@ -4,7 +4,7 @@
  *
  * Keeps original names of files and put them in a hierarchical structure.
  *
- * @copyright Daniel Berthereau, 2012-2013
+ * @copyright Daniel Berthereau, 2012-2014
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  */
 

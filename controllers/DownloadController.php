@@ -274,14 +274,29 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             $type = 'original';
         }
         $this->_type = $type;
+
         // This is used to get list of storage path. Is there a better way?
         // getPathByType() is not secure.
-        $storagePaths = new File;
-        $storagePaths = $storagePaths->getStoragePathsByType();
-        if (!in_array($type, $storagePaths)) {
-            return false;
+
+        // For hacked core (before Omeka 2.2).
+        $file = new File;
+        if (method_exists($file, 'getStoragePathsByType')) {
+            $storagePaths = $file->getStoragePathsByType();
+            if (!in_array($type, $storagePaths)) {
+                return false;
+            }
+            $this->_storage = $storagePaths[$type];
         }
-        $this->_storage = $storagePaths[$type];
+        // Before Omeka 2.2.
+        else {
+            $storagePath = $file->getStoragePath($type);
+            if ($type == 'original') {
+                $this->_storage = substr($storagePath, 0, strlen($storagePath) - 1);
+            }
+            else {
+                $this->_storage = substr($storagePath, 0, strlen($storagePath) - strlen(File::DERIVATIVE_EXT) - 2);
+            }
+        }
         return $this->_storage;
     }
 
