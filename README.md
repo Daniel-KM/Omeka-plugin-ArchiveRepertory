@@ -5,9 +5,14 @@ Archive Repertory (plugin for Omeka)
 Summary
 -------
 
-This plugin for [Omeka] allows to keep original names of imported files and put
-them in a hierarchical structure (collection / item / files) in order to get
-readable urls for files and to avoid an overloading of the file server.
+[Archive Repertory] is a plugin for [Omeka] that allows to keep original names
+of imported files and to put them the simple and hierarchical structure
+collection / item / files, in order to get readable urls for files and to avoid
+an overloading of the file server.
+
+In case of a duplicate name is detected, an index is added to the filename as a
+suffix. Check is done on the basename, without extension, to avoid issues with
+derivatives files.
 
 Note: this plugin does not use the storage system of Zend/Omeka and modifies
 only the archive file name.
@@ -19,13 +24,6 @@ Installation
 Uncompress files and rename plugin folder "ArchiveRepertory".
 
 Then install it like any other Omeka plugin and follow the config instructions.
-
-To make this release compatible with versions of Omeka earlier than 2.0.4, a two
-lines patch should be applied on one file of Omeka core. For more information,
-see the accepted commit [get_derivative_filename]. Or simply update the line 269
-of the file `application/models/File.php` (function `getDerivativeFilename()`):
-replace `$filename = basename($this->filename);`
-with    `$filename = $this->filename;`.
 
 
 Unicode filenames
@@ -81,7 +79,8 @@ page will be displayed. The "mode" argument allows to set the download mode:
 "inline" (default if no confirmation), "attachment" (always when a confirmation
 is needed), "size", "image" or "image-size", according to your needs.
 The file type is "original" by default, but other ones (fullsize...) can be
-used. Note that if a confirmation is needed, the site may be unusable.
+used. Note that if a confirmation is needed for fullsize images, the site may be
+unusable.
 
 
 Warning
@@ -91,10 +90,6 @@ Use it at your own risk.
 
 It's always recommended to backup your files and database so you can roll back
 if needed.
-
-Furthermore, currently, no check is done on the name of files, so if two files
-have the same name and are in the same folder, the second will overwrite the
-first.
 
 
 Troubleshooting
@@ -130,7 +125,6 @@ Contact
 -------
 
 Current maintainers:
-
 * Daniel Berthereau (see [Daniel-KM] on GitHub)
 
 First version of this plugin has been built for [École des Ponts ParisTech].
@@ -143,13 +137,13 @@ Copyright
 * Copyright Daniel Berthereau, 2012-2014
 
 
-[Omeka]: http://www.omeka.org "Omeka.org"
-[Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/Issues "GitHub Archive Repertory"
-[CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html "CeCILL v2.1"
-[GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html "GNU/GPL v3"
+[Omeka]: http://www.omeka.org
+[Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
+[Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/Issues
+[CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
+[GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org
 [Daniel-KM]: http://github.com/Daniel-KM "Daniel Berthereau"
-[École des Ponts ParisTech]: http://bibliotheque.enpc.fr "École des Ponts ParisTech / ENPC"
-[Mines ParisTech]: http://bib.mines-paristech.fr "Mines ParisTech / ENSMP"
-[get_derivative_filename]: https://github.com/Daniel-KM/Omeka/commit/f716af19b3be6d7e0ca77d36c08e409c4935b61c "commit get_derivative_filename"
+[École des Ponts ParisTech]: http://bibliotheque.enpc.fr
+[Mines ParisTech]: http://bib.mines-paristech.fr

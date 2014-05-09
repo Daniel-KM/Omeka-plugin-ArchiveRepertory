@@ -339,9 +339,14 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * Original file name can be cleaned too (user can choose to keep base name
      * only).
+     *
+     * If the name is a duplicate one, a suffix is added.
      */
     public function hookAfterSaveFile($args)
     {
+        // Avoid multiple renames of a file.
+        static $processedFiles = array();
+
         $post = $args['post'];
         $file = $args['record'];
 
@@ -350,6 +355,17 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         if (!$args['insert']) {
             // Check stored file status.
             if ($file->stored == 0) {
+                return;
+            }
+
+            // Check if file is processed.
+            if (isset($processedFiles[$file->id])) {
+                return;
+            }
+
+            // Check if file is a previous inserted file (check a value that
+            // does not exist in an already saved file).
+            if (!isset($file->_storage)) {
                 return;
             }
 
@@ -378,6 +394,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $item = $file->getItem();
                 $archiveFolder = $this->_getArchiveFolderName($item);
                 $newFilename = $archiveFolder . $newFilename;
+                $newFilename = $this->_checkExistingFile($newFilename);
                 if ($file->filename != $newFilename) {
                     $result = $this->_moveFilesInArchiveSubfolders(
                         $file->filename,
@@ -391,6 +408,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                     $file->filename = $newFilename;
                 }
             }
+
+            $processedFiles[$file->id] = true;
 
             // Update file only if needed. It uses normal hook, so this hook
             // will be call one more time, but filenames will be already updated
@@ -698,7 +717,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         if ($path != '') {
             if (file_exists($path)) {
                 if (is_dir($path)) {
-                    chmod($path, 0755);
+                    @chmod($path, 0755);
                     if (is_writable($path)) {
                         return true;
                     }
@@ -710,7 +729,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             if (!@mkdir($path, 0755, true)) {
                 throw new Omeka_Storage_Exception(__('Error making directory: "%s".', $path));
             }
-            chmod($path, 0755);
+            @chmod($path, 0755);
         }
         return true;
     }
@@ -1109,6 +1128,42 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _substr_unicode($string, $start, $length = null) {
         return join('', array_slice(
             preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
+    }
+
+    /**
+     * Checks if the file is a duplicate one. In that case, a suffix is added.
+     *
+     * Check is done on the basename, without extension, to avoid issues with
+     * derivatives.
+     *
+     * @internal No check via database, because the file can be unsaved yet.
+     *
+     * @param string $filename
+     *
+     * @return string
+     * The unique filename, that can be the same as input name.
+     */
+    protected function _checkExistingFile($filename)
+    {
+        // Get the partial path.
+        $dirname = pathinfo($filename, PATHINFO_DIRNAME);
+
+        // Get the real archive path.
+        $filepath = $this->_getFullArchivePath('original') . DIRECTORY_SEPARATOR . $filename;
+        $folder = pathinfo($filepath, PATHINFO_DIRNAME);
+        $name = pathinfo($filepath, PATHINFO_FILENAME);
+        $extension = pathinfo($filepath, PATHINFO_EXTENSION);
+
+        // Check folder for file with any extension or without any extension.
+        $checkName = $name;
+        $i = 1;
+        while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
+            $checkName = $name . '.' . $i++;
+        }
+
+        return ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
+            . $checkName
+            . ($extension ? '.' . $extension : '');
     }
 
     /**
