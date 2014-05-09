@@ -8,11 +8,26 @@ Summary
 [Archive Repertory] is a plugin for [Omeka] that allows to keep original names
 of imported files and to put them the simple and hierarchical structure
 collection / item / files, in order to get readable urls for files and to avoid
-an overloading of the file server.
+an overloading of the file server. A protection against hotlinking and
+bandwidth theft can be set via htaccess.
 
-In case of a duplicate name is detected, an index is added to the filename as a
-suffix. Check is done on the basename, without extension, to avoid issues with
+
+Notes
+-----
+
+If a duplicate name is detected, an index is added to the filename as a suffix.
+Check is done on the basename, without extension, to avoid issues with
 derivatives files.
+
+Duplicate names of collections and items don't create issues, because each file
+is managed individually. Nevertheless, to use identic names is not recommanded,
+because files of different items or collections will be mixed in the same
+folder.
+
+Currently, when a colllection is moved, files are not moved until each item is
+updated. Of course, they are still available. This avoids a long process. To
+update each folder, it's possible to batch edit items, so a job will be launched
+and files will move automatically.
 
 Note: this plugin does not use the storage system of Zend/Omeka and modifies
 only the archive file name.

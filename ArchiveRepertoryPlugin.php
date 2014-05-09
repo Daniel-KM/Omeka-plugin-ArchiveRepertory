@@ -297,6 +297,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
             $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
         }
+
+        // TODO Add a job to process the move of items when the name of a
+        // collection changes or when a collection is removed.
     }
 
     /**

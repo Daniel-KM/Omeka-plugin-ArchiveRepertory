@@ -217,10 +217,7 @@
             <?php echo get_view()->formCheckbox('archive_repertory_file_keep_original_name', true,
                 array('checked' => (boolean) get_option('archive_repertory_file_keep_original_name'))); ?>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.') . '<br />' . PHP_EOL;
-                echo '<strong>' . __('Warning') . '</strong>:<br />' . PHP_EOL;
-                echo __('This option implies that all filenames are unique, in particular if this option is not combined with "Add collection folder" and "Add item folder" options.');
-                ?>
+                <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.'); ?>
             </p>
         </div>
     </div>
@@ -264,7 +261,7 @@
             <?php echo get_view()->formCheckbox('archive_repertory_file_base_original_name', true,
                 array('checked' => (boolean) get_option('archive_repertory_file_base_original_name'))); ?>
             <p class="explanation">
-                <?php echo __('If checked, Omeka will keep only base of original filenames in metadata, not their path or url. This option is independant from previous ones.') . '<br />'; ?>
+                <?php echo __('If checked, Omeka will keep only the base of original filenames in metadata, not their path or url. This option is independant from previous ones.') . '<br />'; ?>
             </p>
         </div>
     </div>
@@ -304,6 +301,7 @@
             <p class="explanation">
                 <?php echo __('Above this size, a captcha will be added to avoid too many downloads from a user.'); ?>
                 <?php echo ' ' . __('Set a very high size to allow all files to be downloaded.'); ?>
+                <?php echo ' ' . __('Note that the "htaccess" file should be updated on the server.'); ?>
             </p>
         </div>
     </div>
