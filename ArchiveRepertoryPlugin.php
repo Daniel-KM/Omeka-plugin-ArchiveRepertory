@@ -4,8 +4,9 @@
  *
  * Keeps original names of files and put them in a hierarchical structure.
  *
- * @copyright Daniel Berthereau, 2012-2014
+ * @copyright Copyright Daniel Berthereau, 2012-2014
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
+ * @package ArchiveRepertory
  */
 
 require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . 'ArchiveRepertoryFunctions.php';
@@ -37,17 +38,17 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected $_options = array(
         // Collections options.
         'archive_repertory_collection_folder' => 'Dublin Core:Title',
-        'archive_repertory_collection_identifier_prefix' => 'document:',
-        'archive_repertory_collection_string_folders' => NULL,
+        'archive_repertory_collection_identifier_prefix' => '',
+        'archive_repertory_collection_string_folders' => null,
         'archive_repertory_collection_convert_name' => 'Full',
         // Items options.
         'archive_repertory_item_folder' => 'id',
-        'archive_repertory_item_identifier_prefix' => 'document:',
+        'archive_repertory_item_identifier_prefix' => '',
         'archive_repertory_item_convert_name' => 'Full',
         // Files options.
-        'archive_repertory_file_keep_original_name' => TRUE,
+        'archive_repertory_file_keep_original_name' => true,
         'archive_repertory_file_convert_name' => 'Full',
-        'archive_repertory_file_base_original_name' => FALSE,
+        'archive_repertory_file_base_original_name' => false,
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
         // Max download without captcha (default to 30 MB).
@@ -146,37 +147,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     public function hookConfigForm()
     {
         // Prepare variables for the config form.
-        $collection_folder = get_option('archive_repertory_collection_folder');
         $collections = get_records('Collection', array(), 0);
         set_loop_records('collections', $collections);
-        $collection_names = unserialize(get_option('archive_repertory_collection_string_folders'));
-        $item_folder = get_option('archive_repertory_item_folder');
-        // TODO To simplify with the direct function.
-        // Get only Dublin Core elements for select form.
-        $listElements = get_db()->getTable('Element')->findPairsForSelectForm(array('item_type_id' => null));
+
         // It's more sustainable to memorize true name than an internal code and
         // it's simpler to get the normal order.
-        $elements = get_db()->getTable('Element')->findBySet('Dublin Core');
-        foreach ($elements as $element) {
-            foreach ($listElements['Dublin Core'] as $key => $name) {
-                if ($element->id == $key) {
-                    $listElements['Dublin Core:' . $element->name] = $name;
-                    unset($listElements[$key]);
-                }
-            }
-        }
-        unset($listElements['Dublin Core']);
+        $dublinCoreIdentifier = $this->_db->getTable('Element')->findByElementSetNameAndElementName('Dublin Core', 'Identifier');
 
-        // Check compatibility of the plugin with Omeka.
-        include_once BASE_DIR . '/application/models/File.php';
-        $fileTest = new FILE;
-        $fileTest->filename = 'hd1:users/test/v2.1/image.omeka.png';
-        $compatible = ($fileTest->getDerivativeFilename() == 'hd1:users/test/v2.1/image.omeka' . '.' . FILE::DERIVATIVE_EXT);
-
-        // Check compatibility of the server with Unicode.
-        $allowUnicode = $this->_checkUnicodeInstallation();
-
-        require 'config_form.php';
+        echo get_view()->partial('plugins/archive-repertory-config-form.php', array(
+            'collection_names' => unserialize(get_option('archive_repertory_collection_string_folders')),
+            'collection_folder' => $this->_getOption('archive_repertory_collection_folder'),
+            'item_folder' => $this->_getOption('archive_repertory_item_folder'),
+            'is_compatible' => $this->_checkOmekaCompatibility(),
+            'allow_unicode' => $this->_checkUnicodeInstallation(),
+            'dublincore_identifier' => $dublinCoreIdentifier->id,
+        ));
     }
 
     /**
@@ -188,19 +173,22 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $post = $args['post'];
 
-        // Save settings.
-        set_option('archive_repertory_collection_folder', $post['archive_repertory_collection_folder']);
+        // Collection options.
+        set_option('archive_repertory_collection_folder', $this->_setOption($post['archive_repertory_collection_folder']));
         set_option('archive_repertory_collection_identifier_prefix', trim($post['archive_repertory_collection_identifier_prefix']));
         set_option('archive_repertory_collection_convert_name', $post['archive_repertory_collection_convert_name']);
-        set_option('archive_repertory_item_folder', $post['archive_repertory_item_folder']);
+        // Items options.
+        set_option('archive_repertory_item_folder', $this->_setOption($post['archive_repertory_item_folder']));
         set_option('archive_repertory_item_identifier_prefix', trim($post['archive_repertory_item_identifier_prefix']));
         set_option('archive_repertory_item_convert_name', $post['archive_repertory_item_convert_name']);
+        // Files options.
         set_option('archive_repertory_file_keep_original_name', (boolean) $post['archive_repertory_file_keep_original_name']);
         set_option('archive_repertory_file_convert_name', $post['archive_repertory_file_convert_name']);
         set_option('archive_repertory_file_base_original_name', (boolean) $post['archive_repertory_file_base_original_name']);
+        // Other options.
         set_option('archive_repertory_derivative_folders', trim($post['archive_repertory_derivative_folders']));
         set_option('archive_repertory_warning_max_size_download', (integer) ($post['archive_repertory_warning_max_size_download']));
-        set_option('archive_repertory_legal_text', trim ($post['archive_repertory_legal_text']));
+        set_option('archive_repertory_legal_text', trim($post['archive_repertory_legal_text']));
 
         // Unlike items, collections are few and stable, so they are kept as an
         // option.
@@ -222,6 +210,68 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
             }
         }
+    }
+
+    /**
+     * Helper for config that allows to get option for collection and item.
+     *
+     * @param string $option Name of the option
+     *
+     * @return string|integer
+     * Value of the option.
+     */
+    private function _getOption($option)
+    {
+        $option = get_option($option);
+        switch ($option) {
+            case empty($option):
+                return 'None';
+
+            case 'None':
+            case 'String':
+            case 'id':
+                return  $option;
+
+            default:
+                list($elementSetName, $elementName) = explode(':', $option);
+                if ($elementSetName && $elementName) {
+                    $element = $this->_db->getTable('Element')->findByElementSetNameAndElementName($elementSetName, $elementName);
+                    if ($element) {
+                        return $element->id;
+                    }
+                }
+        }
+
+        return  'None';
+    }
+
+    /**
+     * Helper for config that allows to set option for collection and item.
+     *
+     * @param string $option Name of the option
+     *
+     * @return string|integer
+     * Value of the option.
+     */
+    private function _setOption($option)
+    {
+        switch ($option) {
+            case empty($option):
+                return 'None';
+
+            case 'None':
+            case 'String':
+            case 'id':
+                return  $option;
+
+            default:
+                $element = get_record_by_id('Element', $option);
+                if ($element) {
+                    return $element->set_name . ':' . $element->name;
+                }
+        }
+
+        return  'None';
     }
 
     /**
@@ -362,7 +412,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $item = $file->getItem();
         $archiveFolder = $this->_getArchiveFolderName($item);
         $result = $this->_removeArchiveFolders($archiveFolder);
-        return TRUE;
+        return true;
     }
 
     /**
@@ -501,7 +551,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _createCollectionDefaultName($collection)
     {
         $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
-        if ($collectionNames === FALSE) {
+        if ($collectionNames === false) {
             $collectionNames = array();
         }
         else {
@@ -650,19 +700,19 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 if (is_dir($path)) {
                     chmod($path, 0755);
                     if (is_writable($path)) {
-                        return TRUE;
+                        return true;
                     }
                     throw new Omeka_Storage_Exception(__('Error directory non writable: "%s".', $path));
                 }
                 throw new Omeka_Storage_Exception(__('Failed to create folder "%s": a file with the same name exists...', $path));
             }
 
-            if (!@mkdir($path, 0755, TRUE)) {
+            if (!@mkdir($path, 0755, true)) {
                 throw new Omeka_Storage_Exception(__('Error making directory: "%s".', $path));
             }
             chmod($path, 0755);
         }
-        return TRUE;
+        return true;
     }
 
     /**
@@ -747,7 +797,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
             $derivatives = explode(',', get_option('archive_repertory_derivative_folders'));
             foreach ($derivatives as $key => $value) {
-                if (strpos($value, '|') === FALSE) {
+                if (strpos($value, '|') === false) {
                     $name = trim($value);
                 }
                 else {
@@ -795,7 +845,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $result = $this->_createFolder($fullpath);
             }
         }
-        return TRUE;
+        return true;
     }
 
     /**
@@ -819,7 +869,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 }
             }
         }
-        return TRUE;
+        return true;
     }
 
     /**
@@ -873,20 +923,20 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *   from the new archive filename and it can't be determined here.
      *
      * @return boolean
-     *   TRUE if files are moved, else FALSE.
+     *   true if files are moved, else false.
      */
     protected function _moveFilesInArchiveSubfolders($currentArchiveFilename, $newArchiveFilename, $derivativeExtension = '')
     {
         // A quick check to avoid some errors.
         if (trim($currentArchiveFilename) == '' || trim($newArchiveFilename) == '') {
-            return FALSE;
+            return false;
         }
 
         // Move file only if it is not in the right place.
         // If the main file is at the right place, this is always the case for
         // the derivatives.
         if ($currentArchiveFilename == $newArchiveFilename) {
-            return TRUE;
+            return true;
         }
 
         $currentArchiveFolder = dirname($currentArchiveFilename);
@@ -932,7 +982,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $this->_removeArchiveFolders($currentArchiveFolder);
         }
 
-        return TRUE;
+        return true;
     }
 
     /**
@@ -1059,6 +1109,23 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _substr_unicode($string, $start, $length = null) {
         return join('', array_slice(
             preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
+    }
+
+    /**
+     * Checks if the plugin is compatible with the current version of Omeka.
+     *
+     * @return boolean
+     */
+    protected function _checkOmekaCompatibility()
+    {
+        $testName = 'hd1:users/test/v2.1/image.omeka';
+
+        include_once BASE_DIR . '/application/models/File.php';
+        $fileTest = new FILE;
+        $fileTest->filename = $testName . '.png';
+        $compatible = ($fileTest->getDerivativeFilename() == $testName . '.' . FILE::DERIVATIVE_EXT);
+
+        return $compatible;
     }
 
     /**
