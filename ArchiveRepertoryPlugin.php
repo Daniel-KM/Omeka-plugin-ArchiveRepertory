@@ -26,6 +26,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'uninstall',
         'config_form',
         'config',
+        'define_routes',
         'after_save_collection',
         'after_save_item',
         'after_save_file',
@@ -272,6 +273,19 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         return  'None';
+    }
+
+    /**
+     * Defines route for direct download count.
+     */
+    public function hookDefineRoutes($args)
+    {
+        // ".htaccess" always redirects direct downloads to a public url.
+        if (is_admin_theme()) {
+            return;
+        }
+
+        $args['router']->addConfig(new Zend_Config_Ini(dirname(__FILE__) . '/routes.ini', 'routes'));
     }
 
     /**

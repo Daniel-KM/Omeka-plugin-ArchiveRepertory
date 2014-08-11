@@ -32,6 +32,11 @@ and files will move automatically.
 Note: this plugin does not use the storage system of Zend/Omeka and modifies
 only the archive file name.
 
+This plugin can be used with [Clean Url] for an improved user experience and
+for a better search engine optimization.
+The anti-hotlinking feature is compatible with the logger [Stats], that allows
+to get stats about viewed pages and downloaded files.
+
 
 Installation
 ------------
@@ -39,6 +44,8 @@ Installation
 Uncompress files and rename plugin folder "ArchiveRepertory".
 
 Then install it like any other Omeka plugin and follow the config instructions.
+
+See below to configure the protection of files.
 
 
 Unicode filenames
@@ -77,25 +84,32 @@ Protecting your files
 
 This plugin simplifies direct access to your files. That's not a main issue if
 they are in public domain or you don't care about hotlinking and bandwidth
-theft. If you want to protect them, you can adapt the following code to your
-needs and it in your root ".htaccess" file, or in a ".htaccess" file in the
-"files" folder or in the "files/original" folder:
+theft.
+
+Anyway, if you want to protect them, you can adapt the following code to your
+needs in the root `.htaccess` file, or in a `.htaccess` file in the "files"
+folder or in the "files/original" folder:
 
 ```
 Options +FollowSymlinks
 RewriteEngine on
-RewriteRule ^files/original/(.*)$ http://www.example.com/archive-repertory/download/file?filename=$1 [NC,L]
+RewriteRule ^files/original/(.*)$ http://www.example.com/archive-repertory/download/files/original/$1 [NC,L]
 ```
+
+You can adapt `routes.ini` as you wish too.
 
 In this example, all original files will be protected: a check will be done by
 the plugin before to deliver files. If the size of the file is bigger than a
-specified size, set in the configuration page of the plugin, a confirmation
-page will be displayed. The "mode" argument allows to set the download mode:
-"inline" (default if no confirmation), "attachment" (always when a confirmation
-is needed), "size", "image" or "image-size", according to your needs.
+specified size set in the configuration page, a confirmation page will be
+displayed.
+
 The file type is "original" by default, but other ones (fullsize...) can be
 used. Note that if a confirmation is needed for fullsize images, the site may be
 unusable.
+
+The "mode" argument in `routes.ini` allows to set the download mode:
+"inline" (default if no confirmation), "attachment" (always when a confirmation
+is needed), "size", "image" or "image-size", according to your needs.
 
 
 Warning
@@ -155,6 +169,8 @@ Copyright
 [Omeka]: http://www.omeka.org
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
 [Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/Issues
+[Clean Url]: http://github.com/Daniel-KM/CleanUrl
+[Stats]: http://github.com/Daniel-KM/Stats
 [CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org

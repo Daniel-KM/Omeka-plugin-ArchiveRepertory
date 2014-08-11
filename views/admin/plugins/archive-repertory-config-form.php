@@ -301,7 +301,7 @@
             <p class="explanation">
                 <?php echo __('Above this size, a captcha will be added to avoid too many downloads from a user.'); ?>
                 <?php echo ' ' . __('Set a very high size to allow all files to be downloaded.'); ?>
-                <?php echo ' ' . __('Note that the "htaccess" file should be updated on the server.'); ?>
+                <?php echo ' ' . __('Note that the ".htaccess" and eventually "routes.ini" files should be updated too.'); ?>
             </p>
         </div>
     </div>

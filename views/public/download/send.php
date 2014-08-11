@@ -17,7 +17,7 @@
         <?php echo flash(); ?>
         <h2><?php echo __('Downloading file'); ?></h2>
         <p><?php echo __('Your download should start automatically in %s5%s seconds. If not, click %shere%s.', '<span id="download_timer">', '</span>', '<a href="' . $sendUrl . '">', '</a>'); ?>
-        <p><?php echo __('Go back to the %sprevious page%s.', '<a href="' . $redirect . '">', '</a>'); ?></p>
+        <p><?php echo __('Go back to the %sprevious page%s.', '<a href="' . $source_page . '">', '</a>'); ?></p>
     </div>
 </div>
 <script type="text/javascript">

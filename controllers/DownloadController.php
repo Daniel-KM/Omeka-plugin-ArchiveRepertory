@@ -8,15 +8,17 @@
  */
 class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActionController
 {
-    protected $_filename;
     protected $_type;
-    protected $_redirect;
-    // Internal only.
-    protected $_mode;
     protected $_storage;
+    protected $_filename;
     protected $_filepath;
+    protected $_filesize;
     protected $_file;
-    protected $_confirm;
+    protected $_contentType;
+    protected $_mode;
+    protected $_theme;
+    protected $_sourcePage;
+    protected $_toConfirm;
 
     /**
      * Initialize the controller.
@@ -27,9 +29,19 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     }
 
     /**
+     * Forward to the 'files' action
+     *
+     * @see self::filesAction()
+     */
+    public function indexAction()
+    {
+        $this->_forward('files');
+    }
+
+    /**
      * Check if a file can be deliver in order to avoid bandwidth theft.
      */
-    public function fileAction()
+    public function filesAction()
     {
         // No view for this action.
         $this->_helper->viewRenderer->setNoRender();
@@ -37,18 +49,20 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         // Prepare session (allow only one confirmation).
         $this->session->setExpirationHops(2);
 
+        // Save default redirection used in case of error or for the form.
+        $this->session->sourcePage = $this->_getSourcePage();
+
         // Check post.
         if (!$this->_checkPost()) {
             $this->_helper->flashMessenger(__("This file doesn't exist."), 'error');
-            return $this->_gotoPreviousPage();
+            return $this->_gotoSourcePage();
         }
 
         // File is good.
-        if ($this->_confirm) {
+        if ($this->_toConfirm) {
             // Filepath is not saved in session for security reason.
             $this->session->filename = $this->_filename;
             $this->session->type = $this->_type;
-            $this->session->redirect = $this->_redirect;
             $this->_helper->redirector->goto('confirm');
         }
         else {
@@ -61,17 +75,18 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     function confirmAction()
     {
-        if (!$this->_checkSession()) {
-            $this->_helper->flashMessenger(__('Download error.'), 'error');
-            return $this->_gotoPreviousPage();
-        }
-
         $this->session->setExpirationHops(2);
 
-        $form = $this->_getConfirmForm();
-        $this->view->form = $form;
-        $this->view->filesize = $this->_formatFileSize($this->_file->size);
-        $this->view->redirect = $this->session->redirect;
+        if (!$this->_checkSession()) {
+            $this->_helper->flashMessenger(__('Download error.'), 'error');
+            return $this->_gotoSourcePage();
+        }
+
+        $this->view->form = $this->_getConfirmForm();
+        $this->view->filesize = $this->_formatFileSize($this->_getFilesize());
+        $this->view->source_page = $this->session->sourcePage;
+        // Kept temporary to avoid change of theme.
+        $this->view->redirect = $this->session->sourcePage;
 
         if (!$this->getRequest()->isPost()) {
             return;
@@ -83,10 +98,9 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             return;
         }
 
-        // When there is a confirmation, sending is always as attachment.
+        // Reset filename and type in session, because they have been checked.
         $this->session->filename = $this->_filename;
         $this->session->type = $this->_type;
-        $this->session->redirect = $this->_redirect;
         $this->_helper->redirector->goto('send');
     }
 
@@ -97,14 +111,15 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     {
         if (!$this->_checkSession()) {
             $this->_helper->flashMessenger(__('Download error.'), 'error');
-            return $this->_gotoPreviousPage();
+            return $this->_gotoSourcePage();
         }
 
         $this->view->sendUrl = WEB_ROOT . '/archive-repertory/download/send';
-        $this->view->redirect = $this->session->redirect;
+        $this->view->source_page = $this->session->sourcePage;
+        // Kept temporary to avoid change of theme.
+        $this->view->redirect = $this->session->sourcePage;
 
         if (!isset($this->session->checked)) {
-            $this->view->redirect = $this->session->redirect;
             $this->session->checked = true;
             return;
         }
@@ -119,14 +134,26 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     protected function _sendFile()
     {
         // Everything has been checked.
-        $mode = &$this->_mode;
-        $filepath = &$this->_filepath;
-        $file = &$this->_file;
+        $filepath = $this->_filepath;
+        $filesize = $this->_getFilesize();
+        $file = $this->_file;
+        $contentType = $this->_getContentType();
+        $mode = $this->_mode;
+
+        // Save the stats if the plugin Stats is ready.
+        if (plugin_is_active('Stats') && $this->_getTheme() == 'public') {
+            $type = $this->_type;
+            $filename = $this->_filename;
+            $this->view->stats()->new_hit(
+                // The redirect to is not useful, so keep original url.
+                '/files/' . $type . '/' . $filename,
+                $file);
+        }
 
         $this->getResponse()->clearBody();
         $this->getResponse()->setHeader('Content-Disposition', $mode . '; filename="' . pathinfo($filepath, PATHINFO_BASENAME) . '"', true);
-        $this->getResponse()->setHeader('Content-Type', $file->mime_type);
-        $this->getResponse()->setHeader('Content-Length', $file->size);
+        $this->getResponse()->setHeader('Content-Type', $contentType);
+        $this->getResponse()->setHeader('Content-Length', $filesize);
         // Cache for 30 days.
         $this->getResponse()->setHeader('Cache-Control', 'private, max-age=2592000, post-check=2592000, pre-check=2592000', true);
         $this->getResponse()->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT', true);
@@ -141,20 +168,15 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     protected function _checkPost()
     {
-        $request = Zend_Controller_Front::getInstance()->getRequest();
-
-        // Optional redirection used in case of error.
-        $this->_redirect = $this->session->redirect = $request->getParam('redirect');
-
         // Check storage type.
-        $type = $request->getParam('type');
+        $type = $this->getRequest()->getParam('type');
         $storage = $this->_checkStorageType($type);
         if (empty($storage)) {
             return false;
         }
 
         // Check filename and secure filepath.
-        $filename = $request->getParam('filename');
+        $filename = $this->getRequest()->getParam('filename');
         $filepath = $this->_checkFilename($filename);
         if (empty($filepath)) {
             return false;
@@ -181,7 +203,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             $mode = $this->_mode = 'attachment';
         }
         else {
-            $mode = $request->getParam('mode');
+            $mode = $this->getRequest()->getParam('mode');
             $mode = $this->_checkDisposition($mode);
             if (empty($mode)) {
                 return false;
@@ -189,9 +211,10 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         }
 
         // Update session if needed.
-        if (empty($this->session->redirect)) {
+        if (empty($this->session->sourcePage)) {
             // TODO Redirect to files/show page? Add an option.
-            $this->_redirect = $this->session->redirect = record_url($item, null, true);
+            $this->_sourcePage = record_url($item, null, true);
+            $this->session->sourcePage = $this->_sourcePage;
         }
 
         return true;
@@ -207,10 +230,15 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     protected function _checkSession()
     {
+        // Save default redirection used in case of error or in the form.
+        if (isset($this->session->sourcePage) && !empty($this->session->sourcePage)) {
+            $this->_sourcePage = $this->session->sourcePage;
+        }
+
         $requiredKeys = array(
             'filename',
             'type',
-            // 'redirect',
+            // 'sourcePage',
         );
         foreach ($requiredKeys as $key) {
             if (!isset($this->session->$key)) {
@@ -220,12 +248,6 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
                 $required = '_' . $key;
                 $this->$required = $this->session->$key;
             }
-        }
-
-        // Check values.
-        // Optional redirection used in case of error.
-        if (isset($this->session->redirect)) {
-            $this->_redirect = $this->session->redirect;
         }
 
         // Check storage type.
@@ -318,26 +340,59 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     }
 
     /**
+     * Get and set file size. This allows to check if file really exists.
+     *
+     * @return integer Length of the file.
+     */
+    protected function _getFilesize()
+    {
+        if (is_null($this->_filesize)) {
+            $filepath = $this->_filepath;
+            $this->_filesize = @filesize($filepath);
+        }
+
+        return $this->_filesize;
+    }
+
+    /**
+     * Set and get file object from the filename. Rights access are checked.
+     *
+     * @return File|null
+     */
+    protected function _getContentType()
+    {
+        if (is_null($this->_contentType)) {
+            $type = $this->_type;
+            if ($type == 'original') {
+                $file = $this->_file;
+                $this->_contentType = $file->mime_type;
+            }
+            else {
+               $this->_contentType = 'image/jpeg';
+            }
+        }
+
+        return $this->_contentType;
+    }
+
+    /**
      * Check rights to direct download.
      *
      * @return boolean False if confirmation is not needed, else true.
      */
     protected function _checkConfirmation()
     {
-        if (is_admin_theme()) {
-            $this->_confirm =  false;
+        if (current_user()) {
+            $this->_toConfirm = false;
         }
 
         // Check for captcha;
-        elseIf ($this->_file->size > (integer) get_option('archive_repertory_warning_max_size_download')) {
-            $this->_confirm =  true;
-        }
-
         else {
-            $this->_confirm =  false;
+            $filesize = $this->_getFilesize();
+            $this->_toConfirm = ($filesize > (integer) get_option('archive_repertory_warning_max_size_download'));
         }
 
-        return $this->_confirm;
+        return $this->_toConfirm;
     }
 
     /**
@@ -390,6 +445,28 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     }
 
     /**
+     * Get and set theme via referrer (public if unknow or unidentified user).
+     *
+     * @return string "public" or "admin".
+     */
+    protected function _getTheme()
+    {
+        if (is_null($this->_theme)) {
+            // Default is set to public.
+            $this->_theme = 'public';
+            // This allows quick control if referrer is not set.
+            if (current_user()) {
+                $referrer = (string) $this->getRequest()->getServer('HTTP_REFERER');
+                if (strpos($referrer, WEB_ROOT . '/admin/') === 0) {
+                    $this->_theme = 'admin';
+                }
+            }
+        }
+
+        return $this->_theme;
+    }
+
+    /**
      * Get the captcha form.
      *
      * @return ArchiveRepertory_ConfirmForm
@@ -401,12 +478,31 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     }
 
     /**
+     * Get and set redirect via referrer to use in case of error or in the form.
+     *
+     * @return string
+      */
+    protected function _getSourcePage()
+    {
+        if (is_null($this->_sourcePage)) {
+            $this->_sourcePage = $this->_request->getServer('HTTP_REFERER');
+            if (empty($this->_sourcePage)) {
+                $this->_sourcePage = WEB_ROOT;
+            }
+        }
+        return $this->_sourcePage;
+    }
+
+    /**
      * Redirect to previous page.
      */
-    protected function _gotoPreviousPage()
+    protected function _gotoSourcePage()
     {
-        if ($this->session->redirect) {
-            $this->redirect($this->session->redirect);
+        if ($this->_sourcePage) {
+            $this->redirect($this->_sourcePage);
+        }
+        elseif ($this->session->sourcePage) {
+            $this->redirect($this->session->sourcePage);
         }
         else {
             $this->redirect(WEB_ROOT);

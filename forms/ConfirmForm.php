@@ -68,18 +68,6 @@ class ArchiveRepertory_ConfirmForm extends Omeka_Form
             ));
         }
 
-        $request = Zend_Controller_Front::getInstance()->getRequest();
-        $params = $request->getParams();
-        $redirect = isset($params['redirect']) && !empty($params['redirect'])
-            ? $params['redirect']
-            : WEB_ROOT;
-
-        $this->addElement('hidden', 'redirect', array(
-            'value' => $redirect,
-            'hidden' => true,
-            'class' => 'hidden',
-            'decorators' => array('ViewHelper'),
-        ));
         $this->addElement('submit', 'submit', array(
             'label' => __('Confirm'),
         ));
