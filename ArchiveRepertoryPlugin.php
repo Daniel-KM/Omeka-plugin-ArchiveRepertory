@@ -40,7 +40,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Collections options.
         'archive_repertory_collection_folder' => 'Dublin Core:Title',
         'archive_repertory_collection_identifier_prefix' => '',
-        'archive_repertory_collection_string_folders' => null,
+        'archive_repertory_collection_names' => 'a:0:{}',
         'archive_repertory_collection_convert_name' => 'Full',
         // Items options.
         'archive_repertory_item_folder' => 'id',
@@ -108,7 +108,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 : 'None'));
             delete_option('archive_repertory_add_collection_folder');
             set_option('archive_repertory_collection_identifier_prefix', $this->_options['archive_repertory_collection_identifier_prefix']);
-            set_option('archive_repertory_collection_string_folders', get_option('archive_repertory_collection_folders'));
+            set_option('archive_repertory_collection_names', get_option('archive_repertory_collection_folders'));
             delete_option('archive_repertory_collection_folders');
             set_option('archive_repertory_collection_convert_name', $this->_options['archive_repertory_collection_convert_name']);
             // Items options.
@@ -132,6 +132,48 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 set_option('archive_repertory_derivative_folders', $this->_options['archive_repertory_derivative_folders']);
             }
         }
+
+        if (version_compare($oldVersion, '2.9', '<')) {
+            // Move option String to Dublin Core:Identifier field.
+            if (get_option('archive_repertory_collection_folder') == 'String') {
+                // Reset option to simplify process in "after save collection".
+                set_option('archive_repertory_collection_folder', 'None');
+                $prefix = get_option('archive_repertory_collection_identifier_prefix');
+                $prefix = $prefix ? $prefix . ' ' : $prefix;
+                // Allow to upgrade from old releases.
+                $collectionNames = get_option('archive_repertory_collection_names');
+                $collectionNames = $collectionNames ? $collectionNames : get_option('archive_repertory_collection_folders');
+                $collectionNames = $collectionNames ? $collectionNames : get_option('archive_repertory_collection_string_folders');
+                $collectionNames = $collectionNames ? unserialize($collectionNames) : array();
+                $collections = get_records('Collection', array(), 0);
+                foreach ($collections as $collection) {
+                    if (!empty($collectionNames[$collection->id])) {
+                        $identifier = $prefix . $collectionNames[$collection->id];
+                        $identifiers = $this->_getRecordIdentifiers($collection, 'Dublin Core:Identifier');
+                        if (!in_array($identifier, $identifiers)) {
+                            $collection = update_collection(
+                                $collection,
+                                array(),
+                                array(
+                                    'Dublin Core' => array(
+                                        'Identifier' => array(
+                                            array(
+                                                'text' => $identifier,
+                                                'html' => false,
+                            )))));
+                        }
+                    }
+                }
+                set_option('archive_repertory_collection_folder', 'Dublin Core:Identifier');
+                $flash = Zend_Controller_Action_HelperBroker::getStaticHelper('FlashMessenger');
+                $flash->addMessage(__('If no error appears, the upgrade process works fine.')
+                    . ' ' . __('The identifier of each collection has been moved to "Dublin Core:Identifier".'));
+            }
+            // Save folder names of collections in all cases.
+            $this->_setCollectionFolderNames();
+            delete_option('archive_repertory_collection_folders');
+            delete_option('archive_repertory_collection_string_folders');
+        }
     }
 
     /**
@@ -149,10 +191,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $view = $args['view'];
 
-        // Prepare variables for the config form.
-        $collections = get_records('Collection', array(), 0);
-        set_loop_records('collections', $collections);
-
         // It's more sustainable to memorize true name than an internal code and
         // it's simpler to get the normal order.
         $dublinCoreIdentifier = $this->_db->getTable('Element')->findByElementSetNameAndElementName('Dublin Core', 'Identifier');
@@ -161,7 +199,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             'plugins/archive-repertory-config-form.php',
             array(
                 'view' => $view,
-                'collection_names' => unserialize(get_option('archive_repertory_collection_string_folders')),
                 'collection_folder' => $this->_getOption('archive_repertory_collection_folder'),
                 'item_folder' => $this->_getOption('archive_repertory_item_folder'),
                 'allow_unicode' => $this->_checkUnicodeInstallation(),
@@ -197,24 +234,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Unlike items, collections are few and stable, so they are kept as an
         // option.
-        $collections = get_records('Collection', array(), 0);
-        set_loop_records('collections', $collections);
-        $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
-        foreach (loop('collections') as $collection) {
-            $id = 'archive_repertory_collection_folder_' . $collection->id;
-            $collectionNames[$collection->id] = $this->_sanitizeName($post[$id]);
-        }
-        set_option('archive_repertory_collection_string_folders', serialize($collectionNames));
         $this->_setCollectionFolderNames();
-
-        // Create collection folders.
-        if (get_option('archive_repertory_collection_convert_name') != 'None') {
-            $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
-            set_loop_records('collections', $collections);
-            foreach (loop('collections') as $collection) {
-                $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
-            }
-        }
+        $this->_createCollectionFolders();
     }
 
     /**
@@ -230,12 +251,11 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $option = get_option($option);
         switch ($option) {
             case empty($option):
+            case 'None':
                 return 'None';
 
-            case 'None':
-            case 'String':
             case 'id':
-                return  $option;
+                return 'id';
 
             default:
                 list($elementSetName, $elementName) = explode(':', $option);
@@ -247,7 +267,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 }
         }
 
-        return  'None';
+        return 'None';
     }
 
     /**
@@ -262,12 +282,11 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         switch ($option) {
             case empty($option):
+            case 'None':
                 return 'None';
 
-            case 'None':
-            case 'String':
             case 'id':
-                return  $option;
+                return 'id';
 
             default:
                 $element = get_record_by_id('Element', $option);
@@ -276,7 +295,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 }
         }
 
-        return  'None';
+        return 'None';
     }
 
     /**
@@ -294,30 +313,23 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
     /**
      * Create a collection folder when a collection is created.
+     *
+     * @todo Add a job to process the move of items when the name of a
+     * collection changes or when a collection is removed.
      */
     public function hookAfterSaveCollection($args)
     {
         $post = $args['post'];
         $collection = $args['record'];
 
-        // Create the collection folder name when option is "String" (exception).
-        $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
-        if (!isset($collectionNames[$collection->id]) && get_option('archive_repertory_collection_convert_name') == 'String') {
-            $collectionNames[$collection->id] = $this->_createCollectionDefaultName($collection);
-            set_option('archive_repertory_collection_string_folders', serialize($collectionNames));
-        }
-
         // Create or update the collection folder name.
         $this->_setCollectionFolderName($collection);
 
-        // Create collection folder.
+        // Create collection folder if needed.
         if (get_option('archive_repertory_collection_convert_name') != 'None') {
-            $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
+            $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
             $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
         }
-
-        // TODO Add a job to process the move of items when the name of a
-        // collection changes or when a collection is removed.
     }
 
     /**
@@ -456,6 +468,45 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Gets identifiers of a record.
+     *
+     * @param Record $record A collection or an item.
+     * @param string $folder Optional. Allow to select a specific folder instead
+     * of the default one.
+     *
+     * @return array.
+     */
+    protected function _getRecordIdentifiers($record, $folder = null)
+    {
+        switch (get_class($record)) {
+            case 'Collection':
+                $folder = is_null($folder) ? get_option('archive_repertory_collection_folder') : $folder;
+                break;
+            case 'Item':
+                $folder = is_null($folder) ? get_option('archive_repertory_item_folder') : $folder;
+                break;
+            default:
+                return array();
+        }
+
+        switch ($folder) {
+            case '':
+            case 'None':
+                return array();
+            case 'id':
+                return array((string) $record->id);
+            default:
+                $identifiers = $record->getElementTexts(
+                    trim(substr($folder, 0, strrpos($folder, ':'))),
+                    trim(substr($folder, strrpos($folder, ':') + 1)));
+                foreach ($identifiers as &$identifier) {
+                    $identifier = $identifier->text;
+                }
+                return $identifiers;
+        }
+    }
+
+    /**
      * Gets archive folder name of an item, that depends on activation of options.
      *
      * @param object $item
@@ -478,18 +529,18 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _getCollectionFolderName($item)
     {
-        $collection = '';
+        $name = '';
 
         // Collection folders are created when the module is configured.
         if (get_option('archive_repertory_collection_convert_name') && !empty($item->collection_id)) {
-            $collection_names = unserialize(get_option('archive_repertory_collection_string_folders'));
-            $collection = $collection_names[$item->collection_id];
-            if ($collection != '') {
-                $collection .= DIRECTORY_SEPARATOR;
+            $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
+            $name = $collectionNames[$item->collection_id];
+            if ($name != '') {
+                $name .= DIRECTORY_SEPARATOR;
             }
         }
 
-        return $collection;
+        return $name;
     }
 
     /**
@@ -538,6 +589,23 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Create collection folders if needed.
+     *
+     * @return void.
+     */
+    protected function _createCollectionFolders()
+    {
+        if (get_option('archive_repertory_collection_convert_name') != 'None') {
+            $collections = get_records('Collection', array(), 0);
+            $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
+            set_loop_records('collections', $collections);
+            foreach (loop('collections') as $collection) {
+                $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
+            }
+        }
+    }
+
+    /**
      * Creates the default name for a collection folder.
      *
      * @param object $collection
@@ -547,7 +615,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _setCollectionFolderName($collection)
     {
         $collection_folder = get_option('archive_repertory_collection_folder');
-        $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
+        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
         switch ($collection_folder) {
             case '':
             case 'None':
@@ -555,9 +623,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 break;
             case 'id':
                 $collectionName = (string) $collection->id;
-                break;
-            case 'String':
-                $collectionName = $collectionNames[$collection->id];
                 break;
             // This case is a common exception.
             case 'Dublin Core:Identifier':
@@ -575,41 +640,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $collectionName,
             get_option('archive_repertory_collection_convert_name'));
 
-        set_option('archive_repertory_collection_string_folders', serialize($collectionNames));
-    }
-
-    /**
-     * Creates the default name for a collection folder.
-     *
-     * Default name is the first word of the collection name. The id is added if
-     * this name is already used.
-     *
-     * @param object $collection
-     *
-     * @return string Unique sanitized name of the collection.
-     */
-    protected function _createCollectionDefaultName($collection)
-    {
-        $collectionNames = unserialize(get_option('archive_repertory_collection_string_folders'));
-        if ($collectionNames === false) {
-            $collectionNames = array();
-        }
-        else {
-            // Remove the current collection id to simplify check.
-            unset($collectionNames[$collection->id]);
-        }
-
-        // Default name is the first word of the collection name.
-        $title = $collection->getElementTexts('Dublin Core', 'Title');
-        $title = isset($title[0]) ? $title[0]->text : '';
-        $defaultName = trim(strtok(trim($title), " \n\r\t"));
-
-        // If this name is already used, the id is added until name is unique.
-        While (in_array($defaultName, $collectionNames)) {
-            $defaultName .= '_' . $collection->id;
-        }
-
-        return $this->_sanitizeName($defaultName);
+        set_option('archive_repertory_collection_names', serialize($collectionNames));
     }
 
     /**

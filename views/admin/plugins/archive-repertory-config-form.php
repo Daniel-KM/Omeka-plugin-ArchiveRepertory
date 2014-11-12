@@ -52,7 +52,6 @@
                 unset($elements['']);
                 $elementsCollection = array(
                     'None' => __("Don't add folder"),
-                    'String' => __('Specific string'),
                     'id' =>__('Internal collection id'),
                 ) + $elements;
                 echo $this->formSelect('archive_repertory_collection_folder',
@@ -64,24 +63,9 @@
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each collection in "files" folders, for example "files/original/collection_identifier/".');
                     echo ' ' . __('New files will be stored inside them. Old files will be moved when collection will be updated.') . '<br />';
                     echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
-                    echo ' ' . __('So recommended ids are a specific field, "Dublin Core:Identifier", "Internal collection id" and eventually "Dublin Core:Title".');
-                    echo ' '  . __('You can use a specific string too, below.') . '<br />';
+                    echo ' ' . __('So recommended ids are a specific field, "Dublin Core:Identifier", "Internal collection id" and eventually "Dublin Core:Title".') . '<br />';
                     echo __('If this identifier does not exists, the Omeka internal collection id will be used.'); ?>
                 </p>
-            </div>
-            <div id='collection-list'>
-                <?php foreach (loop('collections') as $collection) :
-                $id = 'archive_repertory_collection_folder_' . $collection->id; ?>
-                <div class="field">
-                    <?php echo $view->formLabel($id,
-                        __('Folder name for "%s" (#%d)',
-                            strip_formatting(metadata('collection', array('Dublin Core', 'Title'))),
-                            $collection->id)); ?>
-                   <div class="inputs">
-                        <?php echo $view->formText($id, $collection_names[$collection->id], null); ?>
-                    </div>
-                </div>
-                <?php endforeach; ?>
             </div>
             <div id="collection-prefix" class="field">
                 <?php echo $view->formLabel('archive_repertory_collection_identifier_prefix',
@@ -312,28 +296,19 @@
 <?php echo js_tag('vendor/tiny_mce/tiny_mce'); ?>
 <script type="text/javascript">
     var dropCollection = document.getElementById("archive_repertory_collection_folder");
-    var fieldCollectionList = document.getElementById("collection-list");
     var fieldCollectionPrefix = document.getElementById("collection-prefix");
     var fieldCollectionAscii = document.getElementById("collection-ascii");
     dropCollection.onclick = function() {
         if (dropCollection.value == "None"){
-            fieldCollectionList.style.display = "none";
             fieldCollectionPrefix.style.display = "none";
             fieldCollectionAscii.style.display = "none";
         } else if (dropCollection.value == "id") {
-            fieldCollectionList.style.display = "none";
             fieldCollectionPrefix.style.display = "none";
             fieldCollectionAscii.style.display = "none";
-        } else if (dropCollection.value == "String") {
-            fieldCollectionList.style.display = "block";
-            fieldCollectionPrefix.style.display = "none";
-            fieldCollectionAscii.style.display = "block";
         } else if (dropCollection.value == <?php echo $dublincore_identifier; ?>) {
-            fieldCollectionList.style.display = "none";
             fieldCollectionPrefix.style.display = "block";
             fieldCollectionAscii.style.display = "block";
         } else {
-            fieldCollectionList.style.display = "none";
             fieldCollectionPrefix.style.display = "none";
             fieldCollectionAscii.style.display = "block";
         }
