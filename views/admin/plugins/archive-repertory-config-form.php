@@ -63,23 +63,23 @@
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each collection in "files" folders, for example "files/original/collection_identifier/".');
                     echo ' ' . __('New files will be stored inside them. Old files will be moved when collection will be updated.') . '<br />';
                     echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
-                    echo ' ' . __('So recommended ids are a specific field, "Dublin Core:Identifier", "Internal collection id" and eventually "Dublin Core:Title".') . '<br />';
+                    echo ' ' . __('So recommended ids are a specific metadata, "Dublin Core:Identifier", "Internal collection id" and eventually "Dublin Core:Title".') . '<br />';
                     echo __('If this identifier does not exists, the Omeka internal collection id will be used.'); ?>
                 </p>
             </div>
             <div id="collection-prefix" class="field">
-                <?php echo $view->formLabel('archive_repertory_collection_identifier_prefix',
-                    __('Prefix of collection Dublin Core identifier to use')); ?>
+                <?php echo $view->formLabel('archive_repertory_collection_prefix',
+                    __('Prefix for Collection')); ?>
                 <div class="inputs">
                     <p class="explanation">
-                        <?php echo __('Choose a prefix, for example "collection:", "record:" or "doc:", to select the appropriate Dublin Core identifier.');
-                        echo ' ' . __('Let empty to use simply the first Dublin Core identifier.'); ?>
+                        <?php echo __('Choose a prefix, for example "collection:", "record:" or "doc:", to select the appropriate metadata when they are multiple.');
+                        echo ' ' . __('Let empty to use simply the first one.'); ?>
                     </p>
-                    <?php echo $view->formText('archive_repertory_collection_identifier_prefix', get_option('archive_repertory_collection_identifier_prefix'), null); ?>
+                    <?php echo $view->formText('archive_repertory_collection_prefix', get_option('archive_repertory_collection_prefix'), null); ?>
                 </div>
             </div>
             <div id="collection-ascii" class="field">
-                <?php echo $view->formLabel('archive_repertory_collection_convert_name',
+                <?php echo $view->formLabel('archive_repertory_collection_convert',
                     __('Convert collection names')); ?>
                 <div class="inputs">
                     <p class="explanation">
@@ -87,8 +87,8 @@
                         echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                         ?>
                     </p>
-                    <?php echo $view->formRadio('archive_repertory_collection_convert_name',
-                        get_option('archive_repertory_collection_convert_name'),
+                    <?php echo $view->formRadio('archive_repertory_collection_convert',
+                        get_option('archive_repertory_collection_convert'),
                         null,
                         array(
                             'Keep name' => __('Keep name as it')
@@ -130,23 +130,23 @@
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each item in "files" folders, for example "files/original/unique_identifier/".');
                     echo ' ' . __('New files will be stored inside them. Old files will be moved when item will be updated.') . '<br />';
                     echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
-                    echo ' ' . __('So recommended ids are a specifc field, "Dublin Core Identifier", "Internal item id" and eventually "Dublin Core Title".') . '<br />';
+                    echo ' ' . __('So recommended ids are a specifc metadata, "Dublin Core Identifier", "Internal item id" and eventually "Dublin Core Title".') . '<br />';
                     echo __('If this identifier does not exists, the Omeka internal item id will be used.'); ?>
                 </p>
             </div>
             <div id="item-prefix" class="field">
-                <?php echo $view->formLabel('archive_repertory_item_identifier_prefix',
-                    __('Prefix of item Dublin Core identifier to use')); ?>
+                <?php echo $view->formLabel('archive_repertory_item_prefix',
+                    __('Prefix for Item')); ?>
                 <div class="inputs">
                     <p class="explanation">
-                        <?php echo __('Choose a prefix, for example "item:", "record:" or "doc:", to select the appropriate Dublin Core identifier.');
-                        echo ' ' . __('Let empty to use simply the first Dublin Core identifier.'); ?>
+                        <?php echo __('Choose a prefix, for example "item:", "record:" or "doc:", to select the appropriate metadata when they are multiple.');
+                        echo ' ' . __('Let empty to use simply the first one.'); ?>
                     </p>
-                    <?php echo $view->formText('archive_repertory_item_identifier_prefix', get_option('archive_repertory_item_identifier_prefix'), null); ?>
+                    <?php echo $view->formText('archive_repertory_item_prefix', get_option('archive_repertory_item_prefix'), null); ?>
                 </div>
             </div>
             <div id="item-ascii" class="field">
-                <?php echo $view->formLabel('archive_repertory_item_convert_name',
+                <?php echo $view->formLabel('archive_repertory_item_convert',
                     __('Convert folder names')); ?>
                 <div class="inputs">
                     <p class="explanation">
@@ -154,8 +154,8 @@
                         echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                         ?>
                     </p>
-                    <?php echo $view->formRadio('archive_repertory_item_convert_name',
-                        get_option('archive_repertory_item_convert_name'),
+                    <?php echo $view->formRadio('archive_repertory_item_convert',
+                        get_option('archive_repertory_item_convert'),
                         null,
                         array(
                             'Keep name' => __('Keep name as it')
@@ -195,8 +195,8 @@
                 __('Convert filenames')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $view->formRadio('archive_repertory_file_convert_name',
-                get_option('archive_repertory_file_convert_name'),
+            <?php echo $view->formRadio('archive_repertory_file_convert',
+                get_option('archive_repertory_file_convert'),
                 null,
                 array(
                     'Keep name' => __('Keep name as it')

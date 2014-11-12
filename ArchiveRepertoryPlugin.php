@@ -39,16 +39,16 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected $_options = array(
         // Collections options.
         'archive_repertory_collection_folder' => 'Dublin Core:Title',
-        'archive_repertory_collection_identifier_prefix' => '',
+        'archive_repertory_collection_prefix' => '',
         'archive_repertory_collection_names' => 'a:0:{}',
-        'archive_repertory_collection_convert_name' => 'Full',
+        'archive_repertory_collection_convert' => 'Full',
         // Items options.
         'archive_repertory_item_folder' => 'id',
-        'archive_repertory_item_identifier_prefix' => '',
-        'archive_repertory_item_convert_name' => 'Full',
+        'archive_repertory_item_prefix' => '',
+        'archive_repertory_item_convert' => 'Full',
         // Files options.
         'archive_repertory_file_keep_original_name' => true,
-        'archive_repertory_file_convert_name' => 'Full',
+        'archive_repertory_file_convert' => 'Full',
         'archive_repertory_file_base_original_name' => false,
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
@@ -58,8 +58,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     );
 
     /**
-     * Folder paths for each type of files/derivatives.
+     * Default folder paths for each default type of files/derivatives.
      *
+     * @see application/models/File::_pathsByType()
      * @var array
      */
     static private $_pathsByType = array(
@@ -107,23 +108,23 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 ? 'String'
                 : 'None'));
             delete_option('archive_repertory_add_collection_folder');
-            set_option('archive_repertory_collection_identifier_prefix', $this->_options['archive_repertory_collection_identifier_prefix']);
+            set_option('archive_repertory_collection_prefix', $this->_options['archive_repertory_collection_prefix']);
             set_option('archive_repertory_collection_names', get_option('archive_repertory_collection_folders'));
             delete_option('archive_repertory_collection_folders');
-            set_option('archive_repertory_collection_convert_name', $this->_options['archive_repertory_collection_convert_name']);
+            set_option('archive_repertory_collection_convert', $this->_options['archive_repertory_collection_convert']);
             // Items options.
             // Convert option from an installation before release 2.3.
             set_option('archive_repertory_item_folder', (get_option('archive_repertory_add_item_folder')
                 ? 'Dublin Core:Identifier'
                 : 'None'));
             delete_option('archive_repertory_add_item_folder');
-            set_option('archive_repertory_item_identifier_prefix', $this->_options['archive_repertory_item_identifier_prefix']);
-            set_option('archive_repertory_item_convert_name', get_option('archive_repertory_convert_folder_to_ascii'));
+            set_option('archive_repertory_item_prefix', $this->_options['archive_repertory_item_prefix']);
+            set_option('archive_repertory_item_convert', get_option('archive_repertory_convert_folder_to_ascii'));
             delete_option('archive_repertory_convert_folder_to_ascii');
             // Files options.
             set_option('archive_repertory_file_keep_original_name', get_option('archive_repertory_keep_original_filename'));
             delete_option('archive_repertory_keep_original_filename');
-            set_option('archive_repertory_file_convert_name', get_option('archive_repertory_convert_filename_to_ascii'));
+            set_option('archive_repertory_file_convert', get_option('archive_repertory_convert_filename_to_ascii'));
             delete_option('archive_repertory_convert_filename_to_ascii');
             set_option('archive_repertory_file_base_original_name', get_option('archive_repertory_base_original_filename'));
             delete_option('archive_repertory_base_original_filename');
@@ -138,7 +139,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             if (get_option('archive_repertory_collection_folder') == 'String') {
                 // Reset option to simplify process in "after save collection".
                 set_option('archive_repertory_collection_folder', 'None');
-                $prefix = get_option('archive_repertory_collection_identifier_prefix');
+                // Allow to manage upgrade from 2.6 and 2.8.
+                $prefix = get_option('archive_repertory_collection_prefix');
+                $prefix = $prefix ? $prefix : get_option('archive_repertory_collection_identifier_prefix');
                 $prefix = $prefix ? $prefix . ' ' : $prefix;
                 // Allow to upgrade from old releases.
                 $collectionNames = get_option('archive_repertory_collection_names');
@@ -173,6 +176,24 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $this->_setCollectionFolderNames();
             delete_option('archive_repertory_collection_folders');
             delete_option('archive_repertory_collection_string_folders');
+        }
+
+        if (version_compare($oldVersion, '2.9.1', '<')) {
+            // Allow to manage upgrade from 2.6 and 2.8.
+            $prefix = get_option('archive_repertory_collection_prefix');
+            $prefix = $prefix ? $prefix : get_option('archive_repertory_collection_identifier_prefix');
+            set_option('archive_repertory_collection_prefix', $prefix);
+            delete_option('archive_repertory_collection_identifier_prefix');
+            set_option('archive_repertory_collection_convert', get_option('archive_repertory_collection_convert_name'));
+            delete_option('archive_repertory_collection_convert_name');
+            $prefix = get_option('archive_repertory_item_prefix');
+            $prefix = $prefix ? $prefix : get_option('archive_repertory_item_identifier_prefix');
+            set_option('archive_repertory_item_prefix', $prefix);
+            delete_option('archive_repertory_item_identifier_prefix');
+            set_option('archive_repertory_item_convert', get_option('archive_repertory_item_convert_name'));
+            delete_option('archive_repertory_item_convert_name');
+            set_option('archive_repertory_file_convert', get_option('archive_repertory_file_convert_name'));
+            delete_option('archive_repertory_file_convert_name');
         }
     }
 
@@ -217,15 +238,15 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Collection options.
         set_option('archive_repertory_collection_folder', $this->_setOption($post['archive_repertory_collection_folder']));
-        set_option('archive_repertory_collection_identifier_prefix', trim($post['archive_repertory_collection_identifier_prefix']));
-        set_option('archive_repertory_collection_convert_name', $post['archive_repertory_collection_convert_name']);
+        set_option('archive_repertory_collection_prefix', trim($post['archive_repertory_collection_prefix']));
+        set_option('archive_repertory_collection_convert', $post['archive_repertory_collection_convert']);
         // Items options.
         set_option('archive_repertory_item_folder', $this->_setOption($post['archive_repertory_item_folder']));
-        set_option('archive_repertory_item_identifier_prefix', trim($post['archive_repertory_item_identifier_prefix']));
-        set_option('archive_repertory_item_convert_name', $post['archive_repertory_item_convert_name']);
+        set_option('archive_repertory_item_prefix', trim($post['archive_repertory_item_prefix']));
+        set_option('archive_repertory_item_convert', $post['archive_repertory_item_convert']);
         // Files options.
         set_option('archive_repertory_file_keep_original_name', (boolean) $post['archive_repertory_file_keep_original_name']);
-        set_option('archive_repertory_file_convert_name', $post['archive_repertory_file_convert_name']);
+        set_option('archive_repertory_file_convert', $post['archive_repertory_file_convert']);
         set_option('archive_repertory_file_base_original_name', (boolean) $post['archive_repertory_file_base_original_name']);
         // Other options.
         set_option('archive_repertory_derivative_folders', trim($post['archive_repertory_derivative_folders']));
@@ -326,7 +347,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $this->_setCollectionFolderName($collection);
 
         // Create collection folder if needed.
-        if (get_option('archive_repertory_collection_convert_name') != 'None') {
+        if (get_option('archive_repertory_collection_convert') != 'None') {
             $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
             $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
         }
@@ -421,7 +442,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 // Get the new filename.
                 $newFilename = basename_special($file->original_filename);
                 $newFilename = $this->_sanitizeName($newFilename);
-                $newFilename = $this->_convertFilenameTo($newFilename, get_option('archive_repertory_file_convert_name'));
+                $newFilename = $this->_convertFilenameTo($newFilename, get_option('archive_repertory_file_convert'));
 
                 // Move file only if the name is a new one.
                 $item = $file->getItem();
@@ -468,7 +489,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Gets identifiers of a record.
+     * Gets identifiers of a record (with prefix if any).
      *
      * @param Record $record A collection or an item.
      * @param string $folder Optional. Allow to select a specific folder instead
@@ -515,9 +536,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _getArchiveFolderName($item)
     {
-        $collection_folder = $this->_getCollectionFolderName($item);
-        $item_folder = $this->_getItemFolderName($item);
-        return $collection_folder . $item_folder;
+        $collectionFolder = $this->_getCollectionFolderName($item);
+        $itemFolder = $this->_getItemFolderName($item);
+        return $collectionFolder . $itemFolder;
     }
 
     /**
@@ -532,7 +553,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $name = '';
 
         // Collection folders are created when the module is configured.
-        if (get_option('archive_repertory_collection_convert_name') && !empty($item->collection_id)) {
+        if (get_option('archive_repertory_collection_convert') && !empty($item->collection_id)) {
             $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
             $name = $collectionNames[$item->collection_id];
             if ($name != '') {
@@ -552,26 +573,26 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _getItemFolderName($item)
     {
-        $item_folder = get_option('archive_repertory_item_folder');
+        $folder = get_option('archive_repertory_item_folder');
 
-        switch ($item_folder) {
-            // This case is a common exception.
-            case 'Dublin Core:Identifier':
-                $name = $this->_createItemFolderNameFromDCidentifier($item);
-                break;
+        switch ($folder) {
             case 'id':
                 return (string) $item->id . DIRECTORY_SEPARATOR;
             case 'None':
             case '':
                 return '';
             default:
-                $name = $this->_createRecordFolderName($item, array(
-                    trim(substr($item_folder, 0, strrpos($item_folder, ':'))),
-                    trim(substr($item_folder, strrpos($item_folder, ':') + 1)),
-                ));
+                $name = $this->_createRecordFolderName(
+                    $item,
+                    array(
+                        trim(substr($folder, 0, strrpos($folder, ':'))),
+                        trim(substr($folder, strrpos($folder, ':') + 1)),
+                    ),
+                    get_option('archive_repertory_item_prefix')
+                );
         }
 
-        return $this->_convertFilenameTo($name, get_option('archive_repertory_item_convert_name')) . DIRECTORY_SEPARATOR;
+        return $this->_convertFilenameTo($name, get_option('archive_repertory_item_convert')) . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -595,7 +616,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _createCollectionFolders()
     {
-        if (get_option('archive_repertory_collection_convert_name') != 'None') {
+        if (get_option('archive_repertory_collection_convert') != 'None') {
             $collections = get_records('Collection', array(), 0);
             $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
             set_loop_records('collections', $collections);
@@ -614,31 +635,32 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _setCollectionFolderName($collection)
     {
-        $collection_folder = get_option('archive_repertory_collection_folder');
-        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
-        switch ($collection_folder) {
-            case '':
-            case 'None':
-                $collectionName = '';
-                break;
+        $folder = get_option('archive_repertory_collection_folder');
+        switch ($folder) {
             case 'id':
                 $collectionName = (string) $collection->id;
                 break;
-            // This case is a common exception.
-            case 'Dublin Core:Identifier':
-                $collectionName = $this->_createCollectionFolderNameFromDCidentifier($collection);
+            case 'None':
+            case '':
+                $collectionName = '';
                 break;
             default:
-                $collectionName = $this->_createRecordFolderName($collection, array(
-                    trim(substr($collection_folder, 0, strrpos($collection_folder, ':'))),
-                    trim(substr($collection_folder, strrpos($collection_folder, ':') + 1)),
-                ));
+                $collectionName = $this->_createRecordFolderName(
+                    $collection,
+                    array(
+                        trim(substr($folder, 0, strrpos($folder, ':'))),
+                        trim(substr($folder, strrpos($folder, ':') + 1)),
+                    ),
+                    get_option('archive_repertory_collection_prefix')
+                );
                 break;
         }
         $collectionName = $this->_sanitizeName($collectionName);
+
+        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
         $collectionNames[$collection->id] = $this->_convertFilenameTo(
             $collectionName,
-            get_option('archive_repertory_collection_convert_name'));
+            get_option('archive_repertory_collection_convert'));
 
         set_option('archive_repertory_collection_names', serialize($collectionNames));
     }
@@ -647,19 +669,34 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Creates a unique name for a record folder from first metadata.
      *
      * If there isn't any identifier with the prefix, the record id will be used.
-     * The name is sanitized.
+     * The name is sanitized and the possible prefix is removed.
      *
      * @param object $record
      * @param array|string $metadata
+     * @param string $prefix
      *
      * @return string Unique sanitized name of the record.
      */
-    protected function _createRecordFolderName($record, $metadata)
+    protected function _createRecordFolderName($record, $metadata, $prefix)
     {
         if (is_array($metadata)) {
             $metadata = array_values($metadata);
-            $identifier = $record->getElementTexts($metadata[0], $metadata[1]);
-            $identifier = isset($identifier[0]) ? $identifier[0]->text : '';
+            $identifiers = $this->_getRecordIdentifiers($record);
+            if ($prefix) {
+                if (get_class($record) == 'Collection') {
+                    $identifiers = array_filter($identifiers, 'self::_filteredCollectionIdentifier');
+                }
+                else {
+                    $identifiers = array_filter($identifiers, 'self::_filteredItemIdentifier');
+                }
+                $identifier = array_shift($identifiers);
+                if ($identifier) {
+                    $identifier = substr($identifier, strlen($prefix));
+                }
+            }
+            else {
+                $identifier = array_shift($identifiers);
+            }
         }
         else {
             $identifier = $record->getProperty($metadata);
@@ -670,89 +707,43 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Creates a unique name for a collection folder from Dublin Core identifier.
+     * Check if an identifier of a collection begins with the configured prefix.
      *
-     * @see ArchiveRepertoryPlugin::_createRecordFolderNameFromDCidentifier()
+     * @param string $string Identifier to check.
      *
-     * @param object $collection
-     *
-     * @return string Unique sanitized name of the collection.
+     * @return boolean True if the identifier begins with the prefix, false else.
      */
-    protected function _createCollectionFolderNameFromDCidentifier($collection)
+    protected function _filteredCollectionIdentifier($identifier)
     {
-        return $this->_createRecordFolderNameFromDCidentifier(
-            $collection,
-            get_option('archive_repertory_collection_identifier_prefix'));
-    }
+        static $prefix;
+        static $prefixLength;
 
-    /**
-     * Creates a unique name for an item folder from Dublin Core identifier.
-     *
-     * @see ArchiveRepertoryPlugin::_createRecordFolderNameFromDCidentifier()
-     *
-     * @param object $item
-     *
-     * @return string Unique sanitized name of the item.
-     */
-    protected function _createItemFolderNameFromDCidentifier($item)
-    {
-        return $this->_createRecordFolderNameFromDCidentifier(
-            $item,
-            get_option('archive_repertory_item_identifier_prefix'));
-    }
-
-    /**
-     * Creates a unique name for a record folder from Dublin Core identifier.
-     *
-     * Default name is the Dublin Core identifier with the selected prefix. If
-     * there isn't any identifier with the prefix, the record id will be used.
-     * The name is sanitized and the selected prefix is removed.
-     *
-     * @param object $record
-     *
-     * @return string Unique sanitized name of the record.
-     */
-    private function _createRecordFolderNameFromDCidentifier($record, $prefix)
-    {
-        $identifiers = $record->getElementTexts('Dublin Core', 'Identifier');
-        if (empty($identifiers)) {
-            return (string) $record->id;
+        if ($prefix === null) {
+            $prefix = strtolower(get_option('archive_repertory_collection_prefix'));
+            $prefixLength = strlen($prefix);
         }
 
-        // Get all identifiers with the chosen prefix in case they are multiple.
-        foreach ($identifiers as $key => $identifier) {
-            $identifiers[$key] = $identifier->text;
-        }
-        $filtered_identifiers = array_values(array_filter($identifiers, 'self::_filteredIdentifier'));
-        if (!isset($filtered_identifiers[0])) {
-            return (string) $record->id;
-        }
-
-        // Keep only the first identifier with the configured prefix.
-        $record_identifier = substr($filtered_identifiers[0], strlen($prefix));
-        return $this->_sanitizeName($record_identifier);
+        return (strtolower(substr($identifier, 0, $prefixLength)) == $prefix);
     }
 
     /**
      * Check if an identifier of an item begins with the configured prefix.
      *
-     * @param string $identifier
-     *   Identifier to check.
+     * @param string $string Identifier to check.
      *
-     * @return boolean
-     *   True if identifier begins with the prefix, false else.
+     * @return boolean True if the identifier begins with the prefix, false else.
      */
-    protected function _filteredIdentifier($identifier)
+    protected function _filteredItemIdentifier($identifier)
     {
         static $prefix;
-        static $prefix_len;
+        static $prefixLength;
 
         if ($prefix === null) {
-            $prefix = strtolower(get_option('archive_repertory_item_identifier_prefix'));
-            $prefix_len = strlen($prefix);
+            $prefix = strtolower(get_option('archive_repertory_item_prefix'));
+            $prefixLength = strlen($prefix);
         }
 
-        return (strtolower(substr($identifier, 0, $prefix_len)) == $prefix);
+        return (strtolower(substr($identifier, 0, $prefixLength)) == $prefix);
     }
 
     /**
