@@ -249,7 +249,7 @@
             <p class="explanation">
                 <?php echo __('By default, Omeka support three derivative folders: "fullsize", "thumbnails" and "square_thumbnails".');
                 echo ' ' . __('You can add other ones if needed (comma-separated values, like "special_thumbnails, circles").');
-                echo ' ' . __('Folder names should be relative to the files dir "%s".', FILES_DIR);
+                echo ' ' . __('Folder names should be relative to the files dir "%s".', $local_storage);
                 echo '<br />';
                 echo ' ' . __('If a plugin does not use a standard derivative extension (for example ".jpg" for images), you should specified it just after the folder name, separated with a pipe "|", for example "zoom_tiles|_zdata, circles".');
                 echo '<br />';

@@ -125,6 +125,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             array(
                 'view' => $view,
                 'allow_unicode' => $this->_checkUnicodeInstallation(),
+                'local_storage' => $this->_getLocalStoragePath(),
         ));
     }
 
@@ -604,6 +605,15 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Get the local storage path (by default FILES_DIR).
+     */
+    protected function _getLocalStoragePath()
+    {
+        $adapterOptions = Zend_Registry::get('storage')->getAdapter()->getOptions();
+        return $adapterOptions['localDir'];
+    }
+
+    /**
      * Get the archive folder from a name path
      *
      * Example: 'original' can return '/var/www/omeka/files/original'.
@@ -632,8 +642,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         static $archivePaths = array();
 
         if (empty($archivePaths)) {
+            $storagePath = $this->_getLocalStoragePath();
             foreach (self::$_pathsByType as $name => $path) {
-                $archivePaths[$name] = FILES_DIR . DIRECTORY_SEPARATOR . $path;
+                $archivePaths[$name] = $storagePath . DIRECTORY_SEPARATOR . $path;
             }
 
             $derivatives = explode(',', get_option('archive_repertory_derivative_folders'));
@@ -649,7 +660,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                         $this->_derivativeExtensionsByType[$name] = $extension;
                     }
                 }
-                $path = realpath(FILES_DIR . DIRECTORY_SEPARATOR . $name);
+                $path = realpath($storagePath . DIRECTORY_SEPARATOR . $name);
                 if (!empty($name) && !empty($path) && $path != '/') {
                     $archivePaths[$name] = $path;
                 }
