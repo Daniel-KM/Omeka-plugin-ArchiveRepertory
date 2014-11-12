@@ -44,18 +44,18 @@
         <div class="five columns omega">
             <div class="inputs">
                 <?php
-                $elements = get_table_options('Element', null, array(
-                    'record_types' => array('Item', 'All'),
+                $elementsCollection = get_table_options('Element', null, array(
+                    'record_types' => array('Collection', 'All'),
                     'sort' => 'alphaBySet',
                 ));
                 // Remove the "Select Below" label.
-                unset($elements['']);
+                unset($elementsCollection['']);
                 $elementsCollection = array(
-                    'None' => __("Don't add folder"),
+                    'none' => __("Don't add folder"),
                     'id' =>__('Internal collection id'),
-                ) + $elements;
+                ) + $elementsCollection;
                 echo $this->formSelect('archive_repertory_collection_folder',
-                    $collection_folder,
+                    get_option('archive_repertory_collection_folder'),
                     array(),
                     $elementsCollection);
                 ?>
@@ -117,12 +117,18 @@
         <div class="five columns omega">
             <div class="inputs">
                 <?php
+                $elementsItem = get_table_options('Element', null, array(
+                    'record_types' => array('Item', 'All'),
+                    'sort' => 'alphaBySet',
+                ));
+                // Remove the "Select Below" label.
+                unset($elementsItem['']);
                 $elementsItem = array(
-                    'None' => __("Don't add folder"),
+                    'none' => __("Don't add folder"),
                     'id' =>__('Internal item id'),
-                ) + $elements;
+                ) + $elementsItem;
                 echo $this->formSelect('archive_repertory_item_folder',
-                    $item_folder,
+                    get_option('archive_repertory_item_folder'),
                     array(),
                     $elementsItem);
                 ?>
@@ -299,17 +305,11 @@
     var fieldCollectionPrefix = document.getElementById("collection-prefix");
     var fieldCollectionAscii = document.getElementById("collection-ascii");
     dropCollection.onclick = function() {
-        if (dropCollection.value == "None"){
+        if (dropCollection.value == "none" || dropCollection.value == "id"){
             fieldCollectionPrefix.style.display = "none";
             fieldCollectionAscii.style.display = "none";
-        } else if (dropCollection.value == "id") {
-            fieldCollectionPrefix.style.display = "none";
-            fieldCollectionAscii.style.display = "none";
-        } else if (dropCollection.value == <?php echo $dublincore_identifier; ?>) {
-            fieldCollectionPrefix.style.display = "block";
-            fieldCollectionAscii.style.display = "block";
         } else {
-            fieldCollectionPrefix.style.display = "none";
+            fieldCollectionPrefix.style.display = "block";
             fieldCollectionAscii.style.display = "block";
         }
     }
@@ -318,17 +318,11 @@
     var fieldItemPrefix = document.getElementById("item-prefix");
     var fieldItemAscii = document.getElementById("item-ascii");
     dropItem.onclick = function() {
-        if (dropItem.value == "None"){
+        if (dropItem.value == "none" || dropItem.value == "id"){
             fieldItemPrefix.style.display = "none";
             fieldItemAscii.style.display = "none";
-        } else if (dropItem.value == "id") {
-            fieldItemPrefix.style.display = "none";
-            fieldItemAscii.style.display = "none";
-        } else if (dropItem.value == <?php echo $dublincore_identifier; ?>) {
-            fieldItemPrefix.style.display = "block";
-            fieldItemAscii.style.display = "block";
         } else {
-            fieldItemPrefix.style.display = "none";
+            fieldItemPrefix.style.display = "block";
             fieldItemAscii.style.display = "block";
         }
     }

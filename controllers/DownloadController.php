@@ -381,7 +381,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         if (is_null($this->_file)) {
             $filename = $this->_getFilename();
             if ($this->_getStorage() == 'original') {
-                $this->_file =  get_db()->getTable('File')->findBySql('filename = ?', array($filename), true);
+                $this->_file = get_db()->getTable('File')->findBySql('filename = ?', array($filename), true);
             }
            // Get a derivative: this is functional only because filenames are
            // hashed.
