@@ -11,6 +11,8 @@ collection / item / files, in order to get readable urls for files and to avoid
 an overloading of the file server. A protection against hotlinking and
 bandwidth theft can be set via htaccess.
 
+See the example of the digitized heritage of the library of [Mines ParisTech].
+
 
 Notes
 -----
@@ -117,8 +119,8 @@ Warning
 
 Use it at your own risk.
 
-It's always recommended to backup your files and database so you can roll back
-if needed.
+It's always recommended to backup your files and database regularly so you can
+roll back if needed.
 
 
 Troubleshooting
@@ -177,4 +179,4 @@ Copyright
 [OSI]: http://opensource.org
 [Daniel-KM]: http://github.com/Daniel-KM "Daniel Berthereau"
 [École des Ponts ParisTech]: http://bibliotheque.enpc.fr
-[Mines ParisTech]: http://bib.mines-paristech.fr
+[Mines ParisTech]: https://patrimoine.mines-paristech.fr

@@ -145,8 +145,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Shows plugin configuration page.
      */
-    public function hookConfigForm()
+    public function hookConfigForm($args)
     {
+        $view = $args['view'];
+
         // Prepare variables for the config form.
         $collections = get_records('Collection', array(), 0);
         set_loop_records('collections', $collections);
@@ -155,13 +157,16 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // it's simpler to get the normal order.
         $dublinCoreIdentifier = $this->_db->getTable('Element')->findByElementSetNameAndElementName('Dublin Core', 'Identifier');
 
-        echo get_view()->partial('plugins/archive-repertory-config-form.php', array(
-            'collection_names' => unserialize(get_option('archive_repertory_collection_string_folders')),
-            'collection_folder' => $this->_getOption('archive_repertory_collection_folder'),
-            'item_folder' => $this->_getOption('archive_repertory_item_folder'),
-            'is_compatible' => $this->_checkOmekaCompatibility(),
-            'allow_unicode' => $this->_checkUnicodeInstallation(),
-            'dublincore_identifier' => $dublinCoreIdentifier->id,
+        echo $view->partial(
+            'plugins/archive-repertory-config-form.php',
+            array(
+                'view' => $view,
+                'collection_names' => unserialize(get_option('archive_repertory_collection_string_folders')),
+                'collection_folder' => $this->_getOption('archive_repertory_collection_folder'),
+                'item_folder' => $this->_getOption('archive_repertory_item_folder'),
+                'is_compatible' => $this->_checkOmekaCompatibility(),
+                'allow_unicode' => $this->_checkUnicodeInstallation(),
+                'dublincore_identifier' => $dublinCoreIdentifier->id,
         ));
     }
 
