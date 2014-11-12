@@ -1,10 +1,6 @@
 Archive Repertory (plugin for Omeka)
 ====================================
 
-
-Summary
--------
-
 [Archive Repertory] is a plugin for [Omeka] that allows to keep original names
 of imported files and to put them the simple and hierarchical structure
 collection / item / files, in order to get readable urls for files and to avoid
@@ -28,14 +24,15 @@ folder.
 
 Currently, when a colllection is moved, files are not moved until each item is
 updated. Of course, they are still available. This avoids a long process. To
-update each folder, it's possible to batch edit items, so a job will be launched
-and files will move automatically.
+update each folder, it's possible to batch edit items without any operation, so
+a job will be launched and files will move automatically.
 
 Note: this plugin does not use the storage system of Zend/Omeka and modifies
-only the archive file name.
+only the archive file name, so this is kept compatible with any storage.
 
 This plugin can be used with [Clean Url] for an improved user experience and
 for a better search engine optimization.
+
 The anti-hotlinking feature is compatible with the logger [Stats], that allows
 to get stats about viewed pages and downloaded files.
 

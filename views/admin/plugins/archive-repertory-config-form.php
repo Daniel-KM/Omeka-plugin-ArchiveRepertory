@@ -1,8 +1,15 @@
 <?php
-    echo '<p>' . __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '</p>';
-
+    echo __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '<br />';
+    echo __('See %s for more information.', '<a href="https://github.com/Daniel-KM/ArchiveRepertory">ReadMe</a>') . '<br />';
+    echo '<br />';
     echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '<br />';
-    echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...). In case of issues, see "readme.md".');
+    echo '<p><strong>' . __('Warning') . '</strong></p>';
+    echo '<ul>';
+    echo '<li>' . __('Currently, changes in these settings affect only new uploaded files. So, after a change, old files will continue to be stored and available as previously.') . '</li>';
+    echo '<li>' . __('Nevertheless, when an item is updated, attached files will follow the current settings, so all files of a record will move and stay together inside the same folder.') . '</li>';
+    echo '<li>' . __('Currently, no check is done on the name of folders, either for collections or for items. No files will be lost if two folders have the same name, but files attached to a record will be mixed in this folder.') . '</li>';
+    echo '</ul>';
+    echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...). In case of issues, see %s.', '<a href="https://github.com/Daniel-KM/ArchiveRepertory">ReadMe</a>');
     echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />';
     if (empty($allow_unicode)) {
         echo '<p>' . __('This server is compatible with Unicode.') . '</p>';
@@ -26,14 +33,6 @@
         }
         echo '</ul>';
     }
-
-    echo '<p><strong>' . __('Warning') . '</strong></p>';
-    echo '<ul>';
-    echo '<li>' . __('Currently, changes in these settings affect only new uploaded files. So, after a change, old files will continue to be stored and available as previously.') . '</li>';
-    echo '<li>' . __('Nevertheless, when an item is updated, attached files will follow the current settings, so all files of a record will move and stay together inside the same folder.') . '</li>';
-    echo '<li>' . __('Currently, no check is done on the name of files, so if two files have the same name and are in the same folder, the second will overwrite the first.') . '</li>';
-    echo '<li>' . __('Currently, no check is done on the name of folders, either for collections or for items. No files will be lost if two folders have the same name, but files attached to a record will be mixed in this folder.') . '</li>';
-    echo '</ul>';
 ?>
 <fieldset id="fieldset-collections"><legend><?php echo __('Collections'); ?></legend>
     <div class="field">
