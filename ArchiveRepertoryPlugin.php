@@ -164,7 +164,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 'collection_names' => unserialize(get_option('archive_repertory_collection_string_folders')),
                 'collection_folder' => $this->_getOption('archive_repertory_collection_folder'),
                 'item_folder' => $this->_getOption('archive_repertory_item_folder'),
-                'is_compatible' => $this->_checkOmekaCompatibility(),
                 'allow_unicode' => $this->_checkUnicodeInstallation(),
                 'dublincore_identifier' => $dublinCoreIdentifier->id,
         ));
@@ -1186,23 +1185,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         return ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
             . $checkName
             . ($extension ? '.' . $extension : '');
-    }
-
-    /**
-     * Checks if the plugin is compatible with the current version of Omeka.
-     *
-     * @return boolean
-     */
-    protected function _checkOmekaCompatibility()
-    {
-        $testName = 'hd1:users/test/v2.1/image.omeka';
-
-        include_once BASE_DIR . '/application/models/File.php';
-        $fileTest = new FILE;
-        $fileTest->filename = $testName . '.png';
-        $compatible = ($fileTest->getDerivativeFilename() == $testName . '.' . FILE::DERIVATIVE_EXT);
-
-        return $compatible;
     }
 
     /**

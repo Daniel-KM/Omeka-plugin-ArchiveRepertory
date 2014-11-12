@@ -1,14 +1,6 @@
 <?php
     echo '<p>' . __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '</p>';
 
-    if (!$is_compatible) {
-        echo '<p><strong>' . __('Warning') . '</strong><br />';
-        echo __('You use an incompatible version of Omeka.') . '<br />';
-        echo __('Upgrade to Omeka 2.04 or above or add two lines in Omeka core in order to allow a good functioning (see "readme.md").') . '<br />';
-        echo '</p>';
-        return;
-    }
-
     echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '<br />';
     echo __('Omeka works fine with filenames with Unicode characters ("é", "ñ", "Å"...). In case of issues, see "readme.md".');
     echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />';
