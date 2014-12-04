@@ -118,7 +118,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     public function hookConfigForm($args)
     {
-        $view = $args['view'];
+        $view = get_view();
 
         echo $view->partial(
             'plugins/archive-repertory-config-form.php',
