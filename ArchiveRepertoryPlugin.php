@@ -119,11 +119,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     public function hookConfigForm($args)
     {
         $view = get_view();
-
         echo $view->partial(
             'plugins/archive-repertory-config-form.php',
             array(
-                'view' => $view,
                 'allow_unicode' => $this->_checkUnicodeInstallation(),
                 'local_storage' => $this->_getLocalStoragePath(),
         ));

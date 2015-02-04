@@ -37,7 +37,7 @@
 <fieldset id="fieldset-collections"><legend><?php echo __('Collections'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_collection_folder',
+            <?php echo $this->formLabel('archive_repertory_collection_folder',
                 __('How do you want to name your collection folder, if any?')); ?>
         </div>
         <div class="five columns omega">
@@ -67,18 +67,18 @@
                 </p>
             </div>
             <div id="collection-prefix" class="field">
-                <?php echo $view->formLabel('archive_repertory_collection_prefix',
+                <?php echo $this->formLabel('archive_repertory_collection_prefix',
                     __('Prefix for Collection')); ?>
                 <div class="inputs">
                     <p class="explanation">
                         <?php echo __('Choose a prefix, for example "collection:", "record:" or "doc:", to select the appropriate metadata when they are multiple.');
                         echo ' ' . __('Let empty to use simply the first one.'); ?>
                     </p>
-                    <?php echo $view->formText('archive_repertory_collection_prefix', get_option('archive_repertory_collection_prefix'), null); ?>
+                    <?php echo $this->formText('archive_repertory_collection_prefix', get_option('archive_repertory_collection_prefix'), null); ?>
                 </div>
             </div>
             <div id="collection-ascii" class="field">
-                <?php echo $view->formLabel('archive_repertory_collection_convert',
+                <?php echo $this->formLabel('archive_repertory_collection_convert',
                     __('Convert collection names')); ?>
                 <div class="inputs">
                     <p class="explanation">
@@ -86,7 +86,7 @@
                         echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                         ?>
                     </p>
-                    <?php echo $view->formRadio('archive_repertory_collection_convert',
+                    <?php echo $this->formRadio('archive_repertory_collection_convert',
                         get_option('archive_repertory_collection_convert'),
                         null,
                         array(
@@ -110,7 +110,7 @@
 <fieldset id="fieldset-items"><legend><?php echo __('Items'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_item_folder',
+            <?php echo $this->formLabel('archive_repertory_item_folder',
                 __('How do you want to name your item folder, if any?')); ?>
         </div>
         <div class="five columns omega">
@@ -140,18 +140,18 @@
                 </p>
             </div>
             <div id="item-prefix" class="field">
-                <?php echo $view->formLabel('archive_repertory_item_prefix',
+                <?php echo $this->formLabel('archive_repertory_item_prefix',
                     __('Prefix for Item')); ?>
                 <div class="inputs">
                     <p class="explanation">
                         <?php echo __('Choose a prefix, for example "item:", "record:" or "doc:", to select the appropriate metadata when they are multiple.');
                         echo ' ' . __('Let empty to use simply the first one.'); ?>
                     </p>
-                    <?php echo $view->formText('archive_repertory_item_prefix', get_option('archive_repertory_item_prefix'), null); ?>
+                    <?php echo $this->formText('archive_repertory_item_prefix', get_option('archive_repertory_item_prefix'), null); ?>
                 </div>
             </div>
             <div id="item-ascii" class="field">
-                <?php echo $view->formLabel('archive_repertory_item_convert',
+                <?php echo $this->formLabel('archive_repertory_item_convert',
                     __('Convert folder names')); ?>
                 <div class="inputs">
                     <p class="explanation">
@@ -159,7 +159,7 @@
                         echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                         ?>
                     </p>
-                    <?php echo $view->formRadio('archive_repertory_item_convert',
+                    <?php echo $this->formRadio('archive_repertory_item_convert',
                         get_option('archive_repertory_item_convert'),
                         null,
                         array(
@@ -183,11 +183,11 @@
 <fieldset id="fieldset-files"><legend><?php echo __('Files'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_file_keep_original_name',
+            <?php echo $this->formLabel('archive_repertory_file_keep_original_name',
                 __('Keep original filenames')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $view->formCheckbox('archive_repertory_file_keep_original_name', true,
+            <?php echo $this->formCheckbox('archive_repertory_file_keep_original_name', true,
                 array('checked' => (boolean) get_option('archive_repertory_file_keep_original_name'))); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep original filenames of uploaded files and will not hash it.'); ?>
@@ -196,11 +196,11 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_file_convert',
+            <?php echo $this->formLabel('archive_repertory_file_convert',
                 __('Convert filenames')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $view->formRadio('archive_repertory_file_convert',
+            <?php echo $this->formRadio('archive_repertory_file_convert',
                 get_option('archive_repertory_file_convert'),
                 null,
                 array(
@@ -225,11 +225,11 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_file_base_original_name',
+            <?php echo $this->formLabel('archive_repertory_file_base_original_name',
                 __('Keep only base of original filenames')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $view->formCheckbox('archive_repertory_file_base_original_name', true,
+            <?php echo $this->formCheckbox('archive_repertory_file_base_original_name', true,
                 array('checked' => (boolean) get_option('archive_repertory_file_base_original_name'))); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep only the base of original filenames in metadata, not their path or url. This option is independant from previous ones.') . '<br />'; ?>
@@ -240,11 +240,11 @@
 <fieldset id="fieldset-derivative-folders"><legend><?php echo __('Special derivative folders'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_derivative_folders',
+            <?php echo $this->formLabel('archive_repertory_derivative_folders',
                 __('Other derivative folders')); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $view->formText('archive_repertory_derivative_folders', get_option('archive_repertory_derivative_folders'), null); ?>
+            <?php echo $this->formText('archive_repertory_derivative_folders', get_option('archive_repertory_derivative_folders'), null); ?>
             <p class="explanation">
                 <?php echo __('By default, Omeka support three derivative folders: "fullsize", "thumbnails" and "square_thumbnails".');
                 echo ' ' . __('You can add other ones if needed (comma-separated values, like "special_thumbnails, circles").');
@@ -262,11 +262,11 @@
 <fieldset id="fieldset-max-download"><legend><?php echo __('Maximum downloads by user'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_warning_max_size_download',
+            <?php echo $this->formLabel('archive_repertory_warning_max_size_download',
                 __('Maximum size without captcha')); ?>
         </div>
         <div class='inputs five columns omega'>
-            <?php echo $view->formText('archive_repertory_warning_max_size_download', get_option('archive_repertory_warning_max_size_download'), null); ?>
+            <?php echo $this->formText('archive_repertory_warning_max_size_download', get_option('archive_repertory_warning_max_size_download'), null); ?>
             <p class="explanation">
                 <?php echo __('Above this size, a captcha will be added to avoid too many downloads from a user.'); ?>
                 <?php echo ' ' . __('Set a very high size to allow all files to be downloaded.'); ?>
@@ -276,12 +276,12 @@
     </div>
     <div class='field'>
         <div class="two columns alpha">
-            <?php echo $view->formLabel('archive_repertory_legal_text',
+            <?php echo $this->formLabel('archive_repertory_legal_text',
                 __('Legal agreement')); ?>
         </div>
         <div class='inputs five columns omega'>
             <div class='input-block'>
-                <?php echo $view->formTextarea(
+                <?php echo $this->formTextarea(
                     'archive_repertory_legal_text',
                     get_option('archive_repertory_legal_text'),
                     array(
