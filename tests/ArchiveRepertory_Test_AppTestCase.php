@@ -36,6 +36,14 @@ class ArchiveRepertory_Test_AppTestCase extends Omeka_Test_AppTestCase
 
         define('TEST_FILES_DIR', ARCHIVE_REPERTORY_DIR . '/tests/suite/_files');
 
+        // Add constraints if derivatives have been added in the config file.
+        $fileDerivatives = Zend_Registry::get('bootstrap')->getResource('Config')->fileDerivatives;
+        if (!empty($fileDerivatives) && !empty($fileDerivatives->paths)) {
+            foreach ($fileDerivatives->paths->toArray() as $type => $path) {
+                set_option($type . '_constraint', 1);
+            }
+        }
+
         // Prepare config and set a test temporary storage in registry.
         $config = new Omeka_Test_Resource_Config;
         $configIni = $config->init();
