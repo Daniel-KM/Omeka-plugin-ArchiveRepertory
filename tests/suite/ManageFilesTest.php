@@ -39,7 +39,6 @@ class ArchiveRepertory_ManageFilesTest extends ArchiveRepertory_Test_AppTestCase
         $this->assertEquals(pathinfo($fileUrl, PATHINFO_BASENAME), $file->original_filename);
 
         // Readable filename check.
-        // Readable filename check.
         $storageFilepath = $this->item->id
             . DIRECTORY_SEPARATOR
             . pathinfo($fileUrl, PATHINFO_BASENAME);

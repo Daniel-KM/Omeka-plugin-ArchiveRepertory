@@ -43,9 +43,6 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     public function filesAction()
     {
-        // No view for this action.
-        $this->_helper->viewRenderer->setNoRender();
-
         // Prepare session (allow only one confirmation).
         $this->session->setExpirationHops(2);
 
@@ -130,6 +127,10 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     protected function _sendFile()
     {
+        // Disable layout and view.
+        $this->view->layout()->disableLayout();
+        $this->_helper->viewRenderer->setNoRender(true);
+
         // Everything has been checked.
         $filepath = $this->_getFilepath();
         $filesize = $this->_getFilesize();
@@ -147,15 +148,25 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
                 $file);
         }
 
-        $this->getResponse()->clearBody();
-        $this->getResponse()->setHeader('Content-Disposition', $mode . '; filename="' . pathinfo($filepath, PATHINFO_BASENAME) . '"', true);
-        $this->getResponse()->setHeader('Content-Type', $contentType);
-        $this->getResponse()->setHeader('Content-Length', $filesize);
-        // Cache for 30 days.
-        $this->getResponse()->setHeader('Cache-Control', 'private, max-age=2592000, post-check=2592000, pre-check=2592000', true);
-        $this->getResponse()->setHeader('Expires', gmdate('D, d M Y H:i:s', time() + 2592000) . ' GMT', true);
-        $file = file_get_contents($filepath);
-        $this->getResponse()->setBody($file);
+        // Clears all active output buffers to avoid memory overflow.
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        $response = $this->getResponse();
+        $response->clearBody();
+        $response->setHeader('Pragma', 'public');
+        $response->setHeader('Expires', '0');
+        $response->setHeader('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
+        $response->setHeader('Cache-Control', 'private', false);
+        $response->setHeader('Content-Type', $contentType);
+        $response->setHeader('Content-Disposition', $mode . '; filename="' . pathinfo($filepath, PATHINFO_BASENAME) . '"', true);
+        $response->setHeader('Content-Transfer-Encoding', 'binary');
+        $response->setHeader('Content-Length', $filesize);
+        $response->setHeader('Content-Description', 'File Transfer');
+        // Send headers separately to handle large files.
+        $response->sendHeaders();
+        $response->setBody(readfile($filepath));
     }
 
     /**
