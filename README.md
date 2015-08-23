@@ -165,15 +165,15 @@ Copyright
 * Copyright Daniel Berthereau, 2012-2015
 
 
-[Omeka]: http://www.omeka.org
+[Omeka]: https://omeka.org
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
-[Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/Issues
-[Clean Url]: http://github.com/Daniel-KM/CleanUrl
-[Stats]: http://github.com/Daniel-KM/Stats
-[CeCILL v2.1]: http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
+[Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/issues
+[Clean Url]: https://github.com/Daniel-KM/CleanUrl
+[Stats]: https://github.com/Daniel-KM/Stats
+[CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
 [OSI]: http://opensource.org
-[Daniel-KM]: http://github.com/Daniel-KM "Daniel Berthereau"
+[Daniel-KM]: https://github.com/Daniel-KM "Daniel Berthereau"
 [École des Ponts ParisTech]: http://bibliotheque.enpc.fr
 [Mines ParisTech]: https://patrimoine.mines-paristech.fr
