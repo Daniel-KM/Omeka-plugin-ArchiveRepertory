@@ -135,8 +135,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     public function hookConfig($args)
     {
         $post = $args['post'];
-        foreach ($post as $key => $value) {
-            set_option($key, $value);
+        foreach ($this->_options as $optionKey => $optionValue) {
+            if (isset($post[$optionKey])) {
+                set_option($optionKey, $post[$optionKey]);
+            }
         }
 
         // Unlike items, collections are few and stable, so they are kept as an
