@@ -205,7 +205,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                     $newFilename,
                     $this->_getDerivativeExtension($file));
                 if (!$result) {
-                    throw new Exception(__('Cannot move files inside archive directory.'));
+                    $msg = __('Cannot move files inside archive directory.');
+                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
                 }
 
                 // Update file in Omeka database immediately for each file.
@@ -283,7 +284,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                         $newFilename,
                         $this->_getDerivativeExtension($file));
                     if (!$result) {
-                        throw new Exception(__('Cannot move files inside archive directory.'));
+                        $msg = __('Cannot move file inside archive directory.');
+                        throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
                     }
 
                     // Update filename.
@@ -399,9 +401,11 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Collection folders are created when the module is configured.
         if (get_option('archive_repertory_collection_convert') && !empty($item->collection_id)) {
             $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
-            $name = $collectionNames[$item->collection_id];
-            if ($name != '') {
-                $name .= DIRECTORY_SEPARATOR;
+            if (isset($collectionNames[$item->collection_id])) {
+                $name = $collectionNames[$item->collection_id];
+                if ($name != '') {
+                    $name .= DIRECTORY_SEPARATOR;
+                }
             }
         }
 
@@ -544,13 +548,16 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                     if (is_writable($path)) {
                         return true;
                     }
-                    throw new Omeka_Storage_Exception(__('Error directory non writable: "%s".', $path));
+                    $msg = __('Error directory non writable: "%s".', $path);
+                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
                 }
-                throw new Omeka_Storage_Exception(__('Failed to create folder "%s": a file with the same name exists...', $path));
+                $msg = __('Failed to create folder "%s": a file with the same name exists...', $path);
+                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
             }
 
             if (!@mkdir($path, 0755, true)) {
-                throw new Omeka_Storage_Exception(__('Error making directory: "%s".', $path));
+                $msg = __('Error making directory: "%s".', $path);
+                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
             }
             @chmod($path, 0755);
         }
@@ -775,13 +782,14 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *   from the new archive filename and it can't be determined here.
      *
      * @return boolean
-     *   true if files are moved, else false.
+     *   true if files are moved, else throw Omeka_Storage_Exception.
      */
     protected function _moveFilesInArchiveSubfolders($currentArchiveFilename, $newArchiveFilename, $derivativeExtension = '')
     {
         // A quick check to avoid some errors.
         if (trim($currentArchiveFilename) == '' || trim($newArchiveFilename) == '') {
-            return false;
+            $msg = __('Cannot move file inside archive directory: no filename.');
+            throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
 
         // Move file only if it is not in the right place.
@@ -796,10 +804,22 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Move the main original file using Omeka API.
         $result = $this->_createArchiveFolders($newArchiveFolder, $this->_getFullArchivePath('original'));
+        $path = $this->_getFullArchivePath('original');
         $operation = new Omeka_Storage_Adapter_Filesystem(array(
-            'localDir' => $this->_getFullArchivePath('original'),
+            'localDir' => $path,
         ));
-        $operation->move($currentArchiveFilename, $newArchiveFilename);
+
+        if (!file_exists($path . DIRECTORY_SEPARATOR . $currentArchiveFolder)) {
+            return false;
+        }
+
+        try {
+            $operation->move($currentArchiveFilename, $newArchiveFilename);
+        } catch (Omeka_Storage_Exception $e) {
+            $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s").',
+                $currentArchiveFilename, $newArchiveFilename, $path);
+            throw new Omeka_Storage_Exception($e->getMessage() . "\n" . $msg);
+        }
 
         // If any, move derivative files using Omeka API.
         if ($derivativeExtension != '') {
@@ -824,7 +844,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                     $operation = new Omeka_Storage_Adapter_Filesystem(array(
                         'localDir' => $path,
                     ));
-                    $operation->move($currentDerivativeFilename, $newDerivativeFilename);
+                    try {
+                        $operation->move($currentDerivativeFilename, $newDerivativeFilename);
+                    } catch (Omeka_Storage_Exception $e) {
+                        $msg = __('Error during move of a derivative from "%s" to "%s" (local dir: "%s").',
+                            $currentDerivativeFilename, $newDerivativeFilename, $path);
+                        throw new Omeka_Storage_Exception($e->getMessage() . "\n" . $msg);
+                    }
                 }
             }
         }
