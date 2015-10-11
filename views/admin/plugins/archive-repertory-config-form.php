@@ -259,6 +259,27 @@
         </div>
     </div>
 </fieldset>
+<fieldset id="fieldset-move-process"><legend><?php echo __('Process'); ?></legend>
+    <div class="field">
+        <div class="two columns alpha">
+            <?php echo $this->formLabel('archive_repertory_move_process',
+                __('Used process')); ?>
+        </div>
+        <div class="inputs five columns omega">
+            <?php echo $this->formRadio('archive_repertory_move_process',
+                get_option('archive_repertory_move_process'),
+                null,
+                array(
+                    'internal' => __('Omeka internal'),
+                    'direct' => __('Php directly'),
+                )); ?>
+            <p class="explanation">
+                <?php echo __('By default, the process uses the default internal functions of Omeka to process files.'); ?>
+                <?php echo __('If needed, the standard functions of PHP can be used.'); ?>
+            </p>
+        </div>
+    </div>
+</fieldset>
 <fieldset id="fieldset-max-download"><legend><?php echo __('Maximum downloads by user'); ?></legend>
     <div class="field">
         <div class="two columns alpha">

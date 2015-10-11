@@ -52,6 +52,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'archive_repertory_file_base_original_name' => false,
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
+        'archive_repertory_move_process' => 'internal',
         // Max download without captcha (default to 30 MB).
         'archive_repertory_download_max_free_download' => 30000000,
         'archive_repertory_legal_text' => 'I agree with terms of use.',
@@ -802,24 +803,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $currentArchiveFolder = dirname($currentArchiveFilename);
         $newArchiveFolder = dirname($newArchiveFilename);
 
-        // Move the main original file using Omeka API.
-        $result = $this->_createArchiveFolders($newArchiveFolder, $this->_getFullArchivePath('original'));
+        // Move the original file.
         $path = $this->_getFullArchivePath('original');
-        $operation = new Omeka_Storage_Adapter_Filesystem(array(
-            'localDir' => $path,
-        ));
-
-        if (!file_exists($path . DIRECTORY_SEPARATOR . $currentArchiveFolder)) {
-            return false;
-        }
-
-        try {
-            $operation->move($currentArchiveFilename, $newArchiveFilename);
-        } catch (Omeka_Storage_Exception $e) {
-            $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s").',
-                $currentArchiveFilename, $newArchiveFilename, $path);
-            throw new Omeka_Storage_Exception($e->getMessage() . "\n" . $msg);
-        }
+        $result = $this->_createArchiveFolders($newArchiveFolder, $path);
+        $this->_moveFile($currentArchiveFilename, $newArchiveFilename, $path);
 
         // If any, move derivative files using Omeka API.
         if ($derivativeExtension != '') {
@@ -841,16 +828,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 // Check if the derivative file exists or not to avoid some
                 // errors when moving.
                 if (file_exists($path . DIRECTORY_SEPARATOR . $currentDerivativeFilename)) {
-                    $operation = new Omeka_Storage_Adapter_Filesystem(array(
-                        'localDir' => $path,
-                    ));
-                    try {
-                        $operation->move($currentDerivativeFilename, $newDerivativeFilename);
-                    } catch (Omeka_Storage_Exception $e) {
-                        $msg = __('Error during move of a derivative from "%s" to "%s" (local dir: "%s").',
-                            $currentDerivativeFilename, $newDerivativeFilename, $path);
-                        throw new Omeka_Storage_Exception($e->getMessage() . "\n" . $msg);
-                    }
+                    $this->_moveFile($currentDerivativeFilename, $newDerivativeFilename, $path);
                 }
             }
         }
@@ -861,6 +839,48 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         return true;
+    }
+
+    /**
+     * Process the move operation according to admin choice.
+     *
+     * @return boolean True if success, else throw Omeka_Storage_Exception.
+     */
+    protected function _moveFile($source, $destination, $path)
+    {
+        $realSource = $path . DIRECTORY_SEPARATOR . $source;
+        if (!file_exists($realSource)) {
+            $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s"): source does not exist.',
+                $source, $destination, $path);
+            throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+        }
+
+        $result = null;
+        try {
+            switch (get_option('archive_repertory_move_process')) {
+                // Move file directly.
+                case 'direct':
+                    $realDestination = $path . DIRECTORY_SEPARATOR . $destination;
+                    $result = rename($realSource, $realDestination);
+                    break;
+
+                // Move the main original file using Omeka API.
+                case 'internal':
+                default:
+                    $operation = new Omeka_Storage_Adapter_Filesystem(array(
+                        'localDir' => $path,
+                    ));
+                    $operation->move($source, $destination);
+                    $result = true;
+                    break;
+            }
+        } catch (Omeka_Storage_Exception $e) {
+            $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s").',
+                $source, $destination, $path);
+            throw new Omeka_Storage_Exception($e->getMessage() . "\n" . '[ArchiveRepertory] ' . $msg);
+        }
+
+        return $result;
     }
 
     /**
