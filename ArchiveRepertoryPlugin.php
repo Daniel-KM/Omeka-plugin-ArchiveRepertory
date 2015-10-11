@@ -201,6 +201,15 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // is already sanitized.
             $newFilename = $archiveFolder . basename_special($file->filename);
             if ($file->filename != $newFilename) {
+                // Check if the original file exists, else this is an undetected
+                // error during the convert process.
+                $path = $this->_getFullArchivePath('original');
+                if (!file_exists($path . DIRECTORY_SEPARATOR . $file->filename)) {
+                    $msg = __('File "%s" is not present in the original directory.', $file->filename);
+                    $msg .= ' ' . __('There was an undetected error before storage, probably during the convert process.');
+                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+                }
+
                 $result = $this->_moveFilesInArchiveSubfolders(
                     $file->filename,
                     $newFilename,
