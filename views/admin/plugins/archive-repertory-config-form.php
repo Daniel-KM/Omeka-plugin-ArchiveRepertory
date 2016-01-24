@@ -283,11 +283,11 @@
 <fieldset id="fieldset-max-download"><legend><?php echo __('Maximum downloads by user'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_warning_max_size_download',
+            <?php echo $this->formLabel('archive_repertory_download_max_free_download',
                 __('Maximum size without captcha')); ?>
         </div>
         <div class='inputs five columns omega'>
-            <?php echo $this->formText('archive_repertory_warning_max_size_download', get_option('archive_repertory_warning_max_size_download'), null); ?>
+            <?php echo $this->formText('archive_repertory_download_max_free_download', get_option('archive_repertory_download_max_free_download'), null); ?>
             <p class="explanation">
                 <?php echo __('Above this size, a captcha will be added to avoid too many downloads from a user.'); ?>
                 <?php echo ' ' . __('Set a very high size to allow all files to be downloaded.'); ?>

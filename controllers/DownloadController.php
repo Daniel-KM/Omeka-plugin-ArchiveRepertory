@@ -439,7 +439,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             // Check for captcha;
             else {
                 $filesize = $this->_getFilesize();
-                $this->_toConfirm = ($filesize > (integer) get_option('archive_repertory_warning_max_size_download'));
+                $this->_toConfirm = ($filesize > (integer) get_option('archive_repertory_download_max_free_download'));
             }
         }
 
@@ -472,7 +472,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
 
                 case 'size':
                     $filesize = $this->_getFilesize();
-                    $this->_mode = ($filesize > (integer) get_option('archive_repertory_warning_max_size_download'))
+                    $this->_mode = ($filesize > (integer) get_option('archive_repertory_download_max_free_download'))
                         ? 'attachment'
                         : 'inline';
                     break;
@@ -488,7 +488,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
                     $filesize = $this->_getFilesize();
                     $contentType = $this->_getContentType();
                     $this->_mode = (strpos($contentType, 'image') === false
-                            || $filesize > (integer) get_option('archive_repertory_warning_max_size_download'))
+                            || $filesize > (integer) get_option('archive_repertory_download_max_free_download'))
                         ? 'attachment'
                         : 'inline';
                     break;
