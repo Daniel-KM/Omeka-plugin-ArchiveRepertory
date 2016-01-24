@@ -162,7 +162,7 @@ The upgrade for Omeka 2.0 has been built for [Mines ParisTech].
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2012-2015
+* Copyright Daniel Berthereau, 2012-2016
 
 
 [Omeka]: https://omeka.org
