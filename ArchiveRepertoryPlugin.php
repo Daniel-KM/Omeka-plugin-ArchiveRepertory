@@ -4,7 +4,7 @@
  *
  * Keeps original names of files and put them in a hierarchical structure.
  *
- * @copyright Copyright Daniel Berthereau, 2012-2014
+ * @copyright Copyright Daniel Berthereau, 2012-2016
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  * @package ArchiveRepertory
  */
@@ -197,7 +197,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         foreach ($files as $file) {
             // Move file only if it is not in the right place.
             // We don't use original filename here, because this is managed in
-            // hookAfterSavefile() when the file is inserted. Here, the filename
+            // hookAfterSaveFile() when the file is inserted. Here, the filename
             // is already sanitized.
             $newFilename = $archiveFolder . basename_special($file->filename);
             if ($file->filename != $newFilename) {
@@ -205,7 +205,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 // error during the convert process.
                 $path = $this->_getFullArchivePath('original');
                 if (!file_exists($path . DIRECTORY_SEPARATOR . $file->filename)) {
-                    $msg = __('File "%s" is not present in the original directory.', $file->filename);
+                    $msg = __('File "%s" [%s] is not present in the original directory.', $file->filename, $file->original_filename);
                     $msg .= ' ' . __('There was an undetected error before storage, probably during the convert process.');
                     throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
                 }
