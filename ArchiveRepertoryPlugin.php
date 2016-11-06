@@ -588,7 +588,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _removeFolder($path, $evenNonEmpty = false)
     {
         $path = realpath($path);
-        if (file_exists($path)
+        if (strlen($path)
+                && $path != '/'
+                && file_exists($path)
                 && is_dir($path)
                 && is_readable($path)
                 && ((count(@scandir($path)) == 2) // Only '.' and '..'.
@@ -603,22 +605,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Removes directories recursively.
      *
      * @param string $dirPath Directory name.
-     *
      * @return boolean
      */
     protected function _rrmdir($dirPath)
     {
-        $glob = glob($dirPath);
-        foreach ($glob as $g) {
-            if (!is_dir($g)) {
-                unlink($g);
+        $files = array_diff(scandir($dirPath), array('.', '..'));
+        foreach ($files as $file) {
+            $path = $dirPath . DIRECTORY_SEPARATOR . $file;
+            if (is_dir($path)) {
+                $this->_rrmDir($path);
             }
             else {
-                $this->_rrmdir("$g/*");
-                rmdir($g);
+                unlink($path);
             }
         }
-        return true;
+        return rmdir($dirPath);
     }
 
     /**
@@ -853,9 +854,12 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Process the move operation according to admin choice.
      *
+     * @param string $source
+     * @param string $destination
+     * @param string $path
      * @return boolean True if success, else throw Omeka_Storage_Exception.
      */
-    protected function _moveFile($source, $destination, $path)
+    protected function _moveFile($source, $destination, $path = '')
     {
         $realSource = $path . DIRECTORY_SEPARATOR . $source;
         if (!file_exists($realSource)) {
@@ -1013,7 +1017,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return string
      */
-    protected function _substr_unicode($string, $start, $length = null) {
+    protected function _substr_unicode($string, $start, $length = null)
+    {
         return join('', array_slice(
             preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
     }
@@ -1075,7 +1080,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Command line via web check (comparaison with a trivial function).
         $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
-
         if (escapeshellarg($filename) != escapeshellarg_special($filename)) {
             $result['cli'] = __('An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
         }
