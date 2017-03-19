@@ -1,0 +1,27 @@
+# Travis doesn't pass php 5.3 anymore, neither Omeka 2.1.
+language: php
+
+php:
+  #- '5.2'
+  #- '5.3'
+  - '5.4'
+  - '5.5'
+  - '5.6'
+  - '7.0'
+  - '7.1'
+
+env:
+  #- OMEKA_BRANCH=stable-1.5
+  #- OMEKA_BRANCH=stable-2.0
+  #- OMEKA_BRANCH=stable-2.1
+  - OMEKA_BRANCH=stable-2.2
+  - OMEKA_BRANCH=stable-2.3
+  - OMEKA_BRANCH=stable-2.4
+  - OMEKA_BRANCH=stable-2.5
+
+before_script:
+  - ./tests/travis_setup.sh
+
+script: ./tests/travis_tests.sh
+
+notifications:
