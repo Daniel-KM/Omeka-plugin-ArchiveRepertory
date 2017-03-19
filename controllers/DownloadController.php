@@ -35,7 +35,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     public function indexAction()
     {
-        $this->_forward('files');
+        $this->forward('files');
     }
 
     /**
@@ -79,7 +79,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             return $this->_gotoSourcePage();
         }
 
-        $form = $this->_getConfirmForm();
+        $form = new ArchiveRepertory_Form_Confirm();
         $this->view->form = $form;
         $this->view->filesize = $this->_formatFileSize($this->_getFilesize());
         $this->view->source_page = $this->session->sourcePage;
@@ -553,17 +553,6 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         else {
             $this->redirect(WEB_ROOT);
         }
-    }
-
-    /**
-     * Get the captcha form.
-     *
-     * @return ArchiveRepertory_ConfirmForm
-     */
-    protected function _getConfirmForm()
-    {
-        require_once PLUGIN_DIR . '/ArchiveRepertory/forms/ConfirmForm.php';
-        return new ArchiveRepertory_ConfirmForm();
     }
 
     /**

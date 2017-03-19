@@ -2,7 +2,7 @@
 /**
  * ArchiveRepertory_ConfirmForm class - represents the form to confirm send of a file.
  */
-class ArchiveRepertory_ConfirmForm extends Omeka_Form
+class ArchiveRepertory_Form_Confirm extends Omeka_Form
 {
     /**
      * Initialize the form.
