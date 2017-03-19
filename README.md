@@ -1,6 +1,8 @@
 Archive Repertory (plugin for Omeka)
 ====================================
 
+[![Build Status](https://travis-ci.org/Daniel-KM/ArchiveRepertory.svg?branch=master)](https://travis-ci.org/Daniel-KM/ArchiveRepertory)
+
 [Archive Repertory] is a plugin for [Omeka] that allows Omeka to keep the
 original names of imported files and to put them into a simple and hierarchical
 structure consisting of: "collection / item / files", in order to get readable
