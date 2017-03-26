@@ -124,7 +124,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         echo $view->partial(
             'plugins/archive-repertory-config-form.php',
             array(
-                'allow_unicode' => $this->checkUnicodeInstallation(),
+                'allow_unicode' => checkUnicodeInstallation(),
                 'local_storage' => $this->_getLocalStoragePath(),
         ));
     }
@@ -1041,39 +1041,5 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         return join('', array_slice(
             preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
-    }
-
-    /**
-     * Checks if all the system (server + php + web environment) allows to
-     * manage Unicode filename securely.
-     *
-     * @internal This function simply checks the true result of functions
-     * escapeshellarg() and touch with a non Ascii filename.
-     *
-     * @return array of issues.
-     */
-    protected function checkUnicodeInstallation()
-    {
-        $result = array();
-
-        // First character check.
-        $filename = 'éfilé.jpg';
-        if (basename($filename) != $filename) {
-            $result['ascii'] = __('An error occurs when testing function "basename(\'%s\')".', $filename);
-        }
-
-        // Command line via web check (comparaison with a trivial function).
-        $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
-        if (escapeshellarg($filename) != escapeshellarg_special($filename)) {
-            $result['cli'] = __('An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
-        }
-
-        // File system check.
-        $filepath = $this->concatWithSeparator(sys_get_temp_dir(), $filename);
-        if (!(touch($filepath) && file_exists($filepath))) {
-            $result['fs'] = __('A file system error occurs when testing function "touch \'%s\'".', $filepath);
-        }
-
-        return $result;
     }
 }
