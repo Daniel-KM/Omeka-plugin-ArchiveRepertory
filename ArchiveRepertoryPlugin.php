@@ -314,7 +314,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $file = $args['record'];
         $item = $file->getItem();
         $archiveFolder = $this->_getArchiveFolderName($item);
-        $result = $this->_removeArchiveFolders($archiveFolder);
+        $result = $this->removeArchiveFolders($archiveFolder);
         return true;
     }
 
@@ -566,23 +566,19 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Removes empty folders in the archive repertory.
      *
      * @param string $archiveFolder Name of folder to delete, without files dir.
-     * @return bool True if the path is created, Exception if an error occurs.
      */
-    protected function _removeArchiveFolders($archiveFolder)
+    protected function removeArchiveFolders($archiveFolder)
     {
-        if (($archiveFolder != '.')
-            && ($archiveFolder != '..')
-            && ($archiveFolder != DIRECTORY_SEPARATOR)
-            && ($archiveFolder != '')
-        ) {
-            foreach ($this->_getFullArchivePaths() as $path) {
-                $folderPath = $this->concatWithSeparator($path, $archiveFolder);
-                if (realpath($path) != realpath($folderPath)) {
-                    $this->removeDir($folderPath);
-                }
+        if (in_array($archiveFolder, array('.', '..', '/', '\\', ''))) {
+            return;
+        }
+
+        foreach ($this->_getFullArchivePaths() as $path) {
+            $folderPath = $this->concatWithSeparator($path, $archiveFolder);
+            if (realpath($path) != realpath($folderPath)) {
+                $this->removeDir($folderPath);
             }
         }
-        return true;
     }
 
     /**
@@ -855,7 +851,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Remove all old empty folders.
         if ($currentArchiveFolder != $newArchiveFolder) {
-            $this->_removeArchiveFolders($currentArchiveFolder);
+            $this->removeArchiveFolders($currentArchiveFolder);
         }
 
         return true;
