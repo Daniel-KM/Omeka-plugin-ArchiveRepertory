@@ -289,7 +289,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $item = $file->getItem();
                 $archiveFolder = $this->_getArchiveFolderName($item);
                 $newFilename = $archiveFolder . $newFilename;
-                $newFilename = $this->_checkExistingFile($newFilename);
+                $newFilename = $this->getSingleFilename($newFilename);
                 if ($file->filename != $newFilename) {
                     $result = $this->_moveFilesInArchiveSubfolders(
                         $file->filename,
@@ -328,6 +328,40 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $archiveFolder = $this->_getArchiveFolderName($item);
         $result = $this->_removeArchiveFolders($archiveFolder);
         return true;
+    }
+
+    /**
+     * Check if a file is a duplicate and returns it with a suffix if needed.
+     *
+     * @internal The check is done on the basename, without extension, to avoid
+     * issues with derivatives.
+     * @internal No check via database, because the file can be unsaved yet.
+     *
+     * @param string $filename
+     * @return string The unique filename, that can be the same as input name.
+     */
+    protected function getSingleFilename($filename)
+    {
+        // Get the partial path.
+        $dirname = pathinfo($filename, PATHINFO_DIRNAME);
+
+        // Get the real archive path.
+        $filepath = $this->concatWithSeparator($this->_getFullArchivePath('original'), $filename);
+        $folder = pathinfo($filepath, PATHINFO_DIRNAME);
+        $name = pathinfo($filepath, PATHINFO_FILENAME);
+        $extension = pathinfo($filepath, PATHINFO_EXTENSION);
+
+        // Check folder for file with any extension or without any extension.
+        $checkName = $name;
+        $i = 0;
+        while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
+            $checkName = $name . '.' . ++$i;
+        }
+
+        $result = ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
+            . $checkName
+            . ($extension ? '.' . $extension : '');
+        return $result;
     }
 
     /**
@@ -999,40 +1033,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         return join('', array_slice(
             preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
-    }
-
-    /**
-     * Checks if the file is a duplicate one. In that case, a suffix is added.
-     *
-     * Check is done on the basename, without extension, to avoid issues with
-     * derivatives.
-     *
-     * @internal No check via database, because the file can be unsaved yet.
-     *
-     * @param string $filename
-     * @return string The unique filename, that can be the same as input name.
-     */
-    protected function _checkExistingFile($filename)
-    {
-        // Get the partial path.
-        $dirname = pathinfo($filename, PATHINFO_DIRNAME);
-
-        // Get the real archive path.
-        $filepath = $this->concatWithSeparator($this->_getFullArchivePath('original'), $filename);
-        $folder = pathinfo($filepath, PATHINFO_DIRNAME);
-        $name = pathinfo($filepath, PATHINFO_FILENAME);
-        $extension = pathinfo($filepath, PATHINFO_EXTENSION);
-
-        // Check folder for file with any extension or without any extension.
-        $checkName = $name;
-        $i = 0;
-        while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
-            $checkName = $name . '.' . ++$i;
-        }
-
-        return ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
-            . $checkName
-            . ($extension ? '.' . $extension : '');
     }
 
     /**
