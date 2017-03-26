@@ -4,7 +4,7 @@
  *
  * Keeps original names of files and put them in a hierarchical structure.
  *
- * @copyright Copyright Daniel Berthereau, 2012-2016
+ * @copyright Copyright Daniel Berthereau, 2012-2017
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  * @package ArchiveRepertory
  */
@@ -565,27 +565,25 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Checks and removes an empty folder.
-     *
-     * @note Currently, Omeka API doesn't provide a function to remove a folder.
+     * Checks and removes a folder recursively.
      *
      * @param string $path Full path of the folder to remove.
-     * @param bool $evenNonEmpty Remove non empty folder
-     *   This parameter can be used with non standard folders.
+     * @param bool $evenNonEmpty Remove non empty folder. This parameter can be
+     * used with non standard folders.
+     * @return bool
      */
-    protected function _removeFolder($path, $evenNonEmpty = false)
+    protected function removeDir($path, $evenNonEmpty = false)
     {
         $path = realpath($path);
         if (strlen($path)
-                && $path != '/'
+                && $path != DIRECTORY_SEPARATOR
                 && file_exists($path)
                 && is_dir($path)
                 && is_readable($path)
-                && ((count(@scandir($path)) == 2) // Only '.' and '..'.
-                    || $evenNonEmpty)
                 && is_writable($path)
+                && ($evenNonEmpty || count(array_diff(@scandir($path), array('.', '..'))) == 0)
             ) {
-            $this->_rrmdir($path);
+            return $this->recursiveRemoveDir($path);
         }
     }
 
@@ -595,13 +593,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param string $dirPath Directory name.
      * @return bool
      */
-    protected function _rrmdir($dirPath)
+    protected function recursiveRemoveDir($dirPath)
     {
         $files = array_diff(scandir($dirPath), array('.', '..'));
         foreach ($files as $file) {
             $path = $dirPath . DIRECTORY_SEPARATOR . $file;
             if (is_dir($path)) {
-                $this->_rrmDir($path);
+                $this->recursiveRemoveDir($path);
             } else {
                 unlink($path);
             }
@@ -715,7 +713,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             foreach ($this->_getFullArchivePaths() as $path) {
                 $folderPath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
                 if (realpath($path) != realpath($folderPath)) {
-                    $this->_removeFolder($folderPath);
+                    $this->removeDir($folderPath);
                 }
             }
         }
