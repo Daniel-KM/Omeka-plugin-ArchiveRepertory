@@ -27,3 +27,41 @@ function basename_special($path)
 {
     return preg_replace('/^.+[\\\\\\/]/', '', $path);
 }
+
+/**
+ * Helper to manage unicode paths.
+ *
+ * @todo Manage all pathinfo dirname in all file systems.
+ *
+ * @param string $path
+ * @param int $mode Pathinfo constants.
+ * @return string
+ */
+function pathinfo_special($path, $mode)
+{
+    switch ($mode) {
+        case PATHINFO_BASENAME:
+            $result = preg_replace('/^.+[\\\\\\/]/', '', $path);
+            break;
+        case PATHINFO_FILENAME:
+            $result = preg_replace('/^.+[\\\\\\/]/', '', $path);
+            $positionExtension = strrpos($result, '.');
+            if ($positionExtension) {
+                $result = substr($result, 0, $positionExtension);
+            }
+            break;
+        case PATHINFO_EXTENSION:
+            $positionExtension = strrpos($path, '.');
+            $result = $positionExtension
+                ? substr($path, $positionExtension + 1)
+                : '';
+            break;
+        case PATHINFO_DIRNAME:
+            $positionDir = strrpos($path, '/');
+            $result = $positionDir
+                ? substr($path, 0, $positionDir - 1)
+                : $path;
+            break;
+    }
+    return $result;
+}

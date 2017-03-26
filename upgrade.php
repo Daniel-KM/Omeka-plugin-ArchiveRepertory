@@ -116,3 +116,26 @@ if (version_compare($oldVersion, '2.9.2', '<')) {
         set_option($option, $folder);
     }
 }
+
+if (version_compare($oldVersion, '2.14.1', '<')) {
+    foreach (array(
+            'archive_repertory_collection_folder',
+            'archive_repertory_item_folder',
+            'archive_repertory_collection_convert',
+            'archive_repertory_item_convert',
+            'archive_repertory_file_convert',
+        ) as $option) {
+        $value = strtolower(get_option($option));
+        if ($value == 'keep name') {
+            $value = 'keep';
+        }
+        elseif ($value == 'none') {
+            $value = '';
+        }
+        set_option($option, $value);
+    }
+    if (!get_option('archive_repertory_file_keep_original_name')) {
+        set_option('archive_repertory_file_convert', 'hash');
+    }
+    delete_option('archive_repertory_file_keep_original_name');
+}

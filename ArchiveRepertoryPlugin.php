@@ -43,14 +43,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         'archive_repertory_collection_folder' => 'id',
         'archive_repertory_collection_prefix' => '',
         'archive_repertory_collection_names' => 'a:0:{}',
-        'archive_repertory_collection_convert' => 'Full',
+        'archive_repertory_collection_convert' => 'full',
         // Items options.
         'archive_repertory_item_folder' => 'id',
         'archive_repertory_item_prefix' => '',
-        'archive_repertory_item_convert' => 'Full',
+        'archive_repertory_item_convert' => 'full',
         // Files options.
-        'archive_repertory_file_keep_original_name' => true,
-        'archive_repertory_file_convert' => 'Full',
+        'archive_repertory_file_convert' => 'full',
         'archive_repertory_file_base_original_name' => false,
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
@@ -125,7 +124,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         echo $view->partial(
             'plugins/archive-repertory-config-form.php',
             array(
-                'allow_unicode' => $this->_checkUnicodeInstallation(),
+                'allow_unicode' => $this->checkUnicodeInstallation(),
                 'local_storage' => $this->_getLocalStoragePath(),
         ));
     }
@@ -178,10 +177,12 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $this->_setCollectionFolderName($collection);
 
         // Create collection folder if needed.
-        if (get_option('archive_repertory_collection_convert') != 'None') {
-            $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
-            $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
+        if (!get_option('archive_repertory_collection_folder')) {
+            return;
         }
+
+        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
+        $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
     }
 
     /**
@@ -201,7 +202,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // We don't use original filename here, because this is managed in
             // hookAfterSaveFile() when the file is inserted. Here, the filename
             // is already sanitized.
-            $newFilename = $archiveFolder . basename_special($file->filename);
+            $newFilename = $this->concatWithSeparator($archiveFolder, basename_special($file->filename));
+
             if ($file->filename != $newFilename) {
                 // Check if the original file exists, else this is an undetected
                 // error during the convert process.
@@ -279,30 +281,20 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             }
 
             // Rename file only if wanted and needed.
-            if (get_option('archive_repertory_file_keep_original_name')) {
-                // Get the new filename.
-                $newFilename = basename_special($file->original_filename);
-                $newFilename = $this->_sanitizeName($newFilename);
-                $newFilename = $this->_convertFilenameTo($newFilename, get_option('archive_repertory_file_convert'));
-
-                // Move file only if the name is a new one.
-                $item = $file->getItem();
-                $archiveFolder = $this->_getArchiveFolderName($item);
-                $newFilename = $archiveFolder . $newFilename;
-                $newFilename = $this->getSingleFilename($newFilename);
-                if ($file->filename != $newFilename) {
-                    $result = $this->_moveFilesInArchiveSubfolders(
-                        $file->filename,
-                        $newFilename,
-                        $this->_getDerivativeExtension($file));
-                    if (!$result) {
-                        $msg = __('Cannot move file inside archive directory.');
-                        throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
-                    }
-
-                    // Update filename.
-                    $file->filename = $newFilename;
+            $storageId = $this->getStorageId($file);
+            if ($storageId != $file->filename) {
+                $result = $this->_moveFilesInArchiveSubfolders(
+                    $file->filename,
+                    $storageId,
+                    $this->_getDerivativeExtension($file));
+                if (!$result) {
+                    $msg = __('Cannot move file "%s" inside archive directory.',
+                        pathinfo($file->original_filename, PATHINFO_BASENAME));
+                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
                 }
+
+                // Update filename.
+                $file->filename = $storageId;
             }
 
             $processedFiles[$file->id] = true;
@@ -365,56 +357,118 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Gets identifiers of a record (with prefix if any, and only them).
+     * Get the full storage id of a file according to current settings.
      *
-     * @param Record $record A collection or an item.
-     * @param string $folder Optional. Allow to select a specific folder instead
-     * of the default one.
-     * @param bool $first Optional. Allow to return only the first value.
-     * @return string|array.
+     * @internal The directory separator is always "/" to simplify management
+     * of files and checks.
+     * @internal Unlike Omeka S, the storage id includes the extension.
+     *
+     * @param File $file
+     * @return string
      */
-    protected function _getRecordIdentifiers($record, $folder = null, $first = false)
+    protected function getStorageId(File $file)
+    {
+        $item = $file->getItem();
+        $folderName = $this->_getArchiveFolderName($item);
+
+        $extension = pathinfo($file->original_filename, PATHINFO_EXTENSION);
+
+        $mediaConvert = get_option('archive_repertory_file_convert');
+        if ($mediaConvert == 'hash') {
+            $storageName = $this->hashStorageName($file);
+        } else {
+            $storageName = pathinfo_special($file->original_filename, PATHINFO_BASENAME);
+            $storageName = $this->sanitizeName($storageName);
+            $storageName = pathinfo_special($storageName, PATHINFO_FILENAME);
+            $storageName = $this->convertFilenameTo($storageName, $mediaConvert);
+        }
+
+        if ($extension) {
+            $storageName = $storageName . '.' . $extension;
+        }
+
+        // Process the check of the storage name to get the storage id.
+        $storageName = $this->concatWithSeparator($folderName, $storageName);
+        $storageName = $this->getSingleFilename($storageName);
+
+        if (strlen($storageName) > 190) {
+            $msg = __('Cannot move file "%s" inside archive directory: filename too long.',
+                pathinfo($file->original_filename, PATHINFO_BASENAME));
+            throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+        }
+
+        return $storageName;
+    }
+
+    /**
+     * Gets record folder name from a record and create folder if needed.
+     *
+     * @param Record $record
+     * @return string Unique sanitized name of the record.
+     */
+    protected function getRecordFolderName(Omeka_Record_AbstractRecord $record)
     {
         $recordType = get_class($record);
         switch ($recordType) {
             case 'Collection':
-                $folder = is_null($folder) ? get_option('archive_repertory_collection_folder') : $folder;
+                $folder = get_option('archive_repertory_collection_folder');
                 $prefix = get_option('archive_repertory_collection_prefix');
+                $convert = get_option('archive_repertory_collection_convert');
                 break;
             case 'Item':
-                $folder = is_null($folder) ? get_option('archive_repertory_item_folder') : $folder;
+                $folder = get_option('archive_repertory_item_folder');
                 $prefix = get_option('archive_repertory_item_prefix');
+                $convert = get_option('archive_repertory_item_convert');
                 break;
             default:
-                return array();
+                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . sprintf('Unallowed record type "%s".', $recordType));
+        }
+
+        if (empty($folder)) {
+            return '';
         }
 
         switch ($folder) {
             case '':
-            case 'None':
-                return array();
+                return '';
             case 'id':
-                return array((string) $record->id);
+                return (string) $record->id;
             default:
-                // Use a direct query in order to improve speed.
-                $db = $this->_db;
-                $select = $db->select()
-                    ->from($db->ElementText, array('text'))
-                    ->where('element_id = ?', $folder)
-                    ->where('record_type = ?', $recordType)
-                    ->where('record_id = ?', $record->id)
-                    ->order('id');
-                if ($prefix) {
-                    $select->where('text LIKE ?', $prefix . '%');
-                }
-                if ($first) {
-                    $select->limit(1);
-                    $identifiers = $db->fetchOne($select);
-                } else {
-                    $identifiers = $db->fetchCol($select);
-                }
-                return $identifiers;
+                $identifier = $this->getRecordIdentifier($record, $folder, $prefix);
+                $name = $this->sanitizeName($identifier);
+                return empty($name)
+                    ? (string) $record->id
+                    : $this->convertFilenameTo($name, $convert) ;
         }
+    }
+
+    /**
+     * Gets first identifier of a record.
+     *
+     * @param Record $record A collection or an item.
+     * @param string $elementId
+     * @param string $prefix
+     * @return string
+     */
+    protected function getRecordIdentifier(Omeka_Record_AbstractRecord $record, $elementId, $prefix)
+    {
+        // Use a direct query in order to improve speed.
+        $db = $this->_db;
+        $select = $db->select()
+            ->from($db->ElementText, array('text'))
+            ->where('element_id = ?', $elementId)
+            ->where('record_type = ?', get_class($record))
+            ->where('record_id = ?', $record->id)
+            ->order('id')
+            ->limit(1);
+        if ($prefix) {
+            $select->where('text LIKE ?', $prefix . '%');
+        }
+        $identifier = $db->fetchOne($select);
+        if ($prefix) {
+            $identifier = trim(substr($identifier, strlen($prefix)));
+        }
+        return $identifier;
     }
 
     /**
@@ -426,8 +480,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _getArchiveFolderName($item)
     {
         $collectionFolder = $this->_getCollectionFolderName($item);
-        $itemFolder = $this->_getItemFolderName($item);
-        return $collectionFolder . $itemFolder;
+        $itemFolder = $this->getRecordFolderName($item);
+        return $this->concatWithSeparator($collectionFolder, $itemFolder);
     }
 
     /**
@@ -438,47 +492,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _getCollectionFolderName($item)
     {
-        $name = '';
-
-        // Collection folders are created when the module is configured.
-        if (get_option('archive_repertory_collection_convert') && !empty($item->collection_id)) {
-            $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
-            if (isset($collectionNames[$item->collection_id])) {
-                $name = $collectionNames[$item->collection_id];
-                if ($name != '') {
-                    $name .= DIRECTORY_SEPARATOR;
-                }
-            }
+        if (empty($item->collection_id)) {
+            return '';
         }
 
+        $folder = get_option('archive_repertory_collection_folder');
+        if (empty($folder)) {
+            return '';
+        }
+
+        // Collection folders are presaved.
+        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
+        $name = isset($collectionNames[$item->collection_id])
+            ? $collectionNames[$item->collection_id]
+            : $item->collection_id;
         return $name;
-    }
-
-    /**
-     * Gets item folder name from an item and create folder if needed.
-     *
-     * @param object $item
-     * @return string Unique sanitized name of the item.
-     */
-    protected function _getItemFolderName($item)
-    {
-        $folder = get_option('archive_repertory_item_folder');
-
-        switch ($folder) {
-            case 'id':
-                return (string) $item->id . DIRECTORY_SEPARATOR;
-            case 'none':
-            case '':
-                return '';
-            default:
-                $name = $this->_getRecordFolderNameFromMetadata(
-                    $item,
-                    $folder,
-                    get_option('archive_repertory_item_prefix')
-                );
-        }
-
-        return $this->_convertFilenameTo($name, get_option('archive_repertory_item_convert')) . DIRECTORY_SEPARATOR;
     }
 
     /**
@@ -487,8 +515,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function _setCollectionFolderNames()
     {
         $collections = get_records('Collection', array(), 0);
-        set_loop_records('collections', $collections);
-        foreach (loop('collections') as $collection) {
+        foreach ($collections as $collection) {
             $this->_setCollectionFolderName($collection);
         }
     }
@@ -497,34 +524,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Creates the default name for a collection folder.
      *
      * @param object $collection
-     * @return string Unique sanitized name of the collection.
      */
     protected function _setCollectionFolderName($collection)
     {
         $folder = get_option('archive_repertory_collection_folder');
-        switch ($folder) {
-            case 'id':
-                $collectionName = (string) $collection->id;
-                break;
-            case 'none':
-            case '':
-                $collectionName = '';
-                break;
-            default:
-                $collectionName = $this->_getRecordFolderNameFromMetadata(
-                    $collection,
-                    $folder,
-                    get_option('archive_repertory_collection_prefix')
-                );
-                $collectionName = $this->_sanitizeName($collectionName);
-                break;
+        if (empty($folder)) {
+            return;
         }
 
-        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
-        $collectionNames[$collection->id] = $this->_convertFilenameTo(
-            $collectionName,
+        $name = $this->getRecordFolderName($collection);
+        $name = $this->convertFilenameTo(
+            $name,
             get_option('archive_repertory_collection_convert'));
 
+        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
+        $collectionNames[$collection->id] = $name;
         set_option('archive_repertory_collection_names', serialize($collectionNames));
     }
 
@@ -576,39 +590,18 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Creates a unique name for a record folder from first metadata.
-     *
-     * If there isn't any identifier with the prefix, the record id will be used.
-     * The name is sanitized and the possible prefix is removed.
-     *
-     * @param object $record
-     * @param int $elementId
-     * @param string $prefix
-     * @return string Unique sanitized name of the record.
-     */
-    protected function _getRecordFolderNameFromMetadata($record, $elementId, $prefix)
-    {
-        $identifier = $this->_getRecordIdentifiers($record, null, true);
-        if ($identifier && $prefix) {
-            $identifier = trim(substr($identifier, strlen($prefix)));
-        }
-        return empty($identifier)
-            ? (string) $record->id
-            : $this->_sanitizeName($identifier);
-    }
-
-    /**
      * Create collection folders if needed.
      */
     protected function _createCollectionFolders()
     {
-        if (get_option('archive_repertory_collection_convert') != 'None') {
-            $collections = get_records('Collection', array(), 0);
-            $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
-            set_loop_records('collections', $collections);
-            foreach (loop('collections') as $collection) {
-                $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
-            }
+        if (!get_option('archive_repertory_collection_convert')) {
+            return;
+        }
+
+        $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
+        $collections = get_records('Collection', array(), 0);
+        foreach ($collections as $collection) {
+            $result = $this->_createArchiveFolders($collectionNames[$collection->id]);
         }
     }
 
@@ -919,6 +912,21 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Hash a stable single storage name for a specific file.
+     *
+     * @internal We cannot use a random name.
+     * @see Omeka_Filter_Filename::renameFile()
+     *
+     * @param File $file
+     * @return string
+     */
+    protected function hashStorageName(File $file)
+    {
+        $storageName = md5($file->id . '/' . $file->original_filename);
+        return $storageName;
+    }
+
+    /**
      * Returns a sanitized string for folder or file path.
      *
      * The string should be a simple name, not a full path or url, because "/",
@@ -927,7 +935,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param string $string The string to sanitize.
      * @return string The sanitized string.
      */
-    protected function _sanitizeName($string)
+    protected function sanitizeName($string)
     {
         $string = strip_tags($string);
         // The first character is a space and the last one is a no-break space.
@@ -935,7 +943,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $string = preg_replace('/[\(\{]/', '[', $string);
         $string = preg_replace('/[\)\}]/', ']', $string);
         $string = preg_replace('/[[:cntrl:]\/\\\?<>:\*\%\|\"\'`\&\;#+\^\$\s]/', ' ', $string);
-        return substr(preg_replace('/\s+/', ' ', $string), -250);
+        return substr(preg_replace('/\s+/', ' ', $string), -180);
     }
 
     /**
@@ -944,27 +952,27 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @internal The string should be already sanitized.
      * The string should be a simple name, not a full path or url, because "/",
      * "\" and ":" are removed (so a path should be sanitized by part).
-     * @see ArchiveRepertoryPlugin::_sanitizeName()
+     * @see ArchiveRepertoryPlugin::sanitizeName()
      *
      * @param string $string The string to sanitize.
      * @param string $format The format to convert to.
      * @return string The sanitized string.
      */
-    protected function _convertFilenameTo($string, $format)
+    protected function convertFilenameTo($string, $format)
     {
         switch ($format) {
-            case 'Keep name':
+            case 'keep':
                 return $string;
-            case 'First letter':
-                return $this->_convertFirstLetterToAscii($string);
-            case 'Spaces':
-                return $this->_convertSpacesToUnderscore($string);
-            case 'First and spaces':
-                $string = $this->_convertFilenameTo($string, 'First letter');
-                return $this->_convertSpacesToUnderscore($string);
-            case 'Full':
+            case 'first letter':
+                return $this->convertFirstLetterToAscii($string);
+            case 'spaces':
+                return $this->convertSpacesToUnderscore($string);
+            case 'first and spaces':
+                $string = $this->convertFilenameTo($string, 'first letter');
+                return $this->convertSpacesToUnderscore($string);
+            case 'full':
             default:
-                return $this->_convertNameToAscii($string);
+                return $this->convertNameToAscii($string);
         }
     }
 
@@ -972,49 +980,49 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Returns an unaccentued string for folder or file name.
      *
      * @internal The string should be already sanitized.
-     * @see ArchiveRepertoryPlugin::_convertFilenameTo()
+     * @see ArchiveRepertoryPlugin::convertFilenameTo()
      *
      * @param string $string The string to convert to ascii.
      * @return string The converted string to use as a folder or a file name.
      */
-    private function _convertNameToAscii($string)
+    private function convertNameToAscii($string)
     {
         $string = htmlentities($string, ENT_NOQUOTES, 'utf-8');
         $string = preg_replace('#\&([A-Za-z])(?:acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml)\;#', '\1', $string);
         $string = preg_replace('#\&([A-Za-z]{2})(?:lig)\;#', '\1', $string);
         $string = preg_replace('#\&[^;]+\;#', '_', $string);
         $string = preg_replace('/[^[:alnum:]\[\]_\-\.#~@+:]/', '_', $string);
-        return substr(preg_replace('/_+/', '_', $string), -250);
+        return substr(preg_replace('/_+/', '_', $string), -180);
     }
 
     /**
      * Returns a formatted string for folder or file path (first letter only).
      *
      * @internal The string should be already sanitized.
-     * @see ArchiveRepertoryPlugin::_convertFilenameTo()
+     * @see ArchiveRepertoryPlugin::convertFilenameTo()
      *
      * @param string $string The string to sanitize.
      * @return string The sanitized string.
      */
-    private function _convertFirstLetterToAscii($string)
+    private function convertFirstLetterToAscii($string)
     {
-        $first = $this->_convertNameToAscii($string);
+        $first = $this->convertNameToAscii($string);
         if (empty($first)) {
             return '';
         }
-        return $first[0] . $this->_substr_unicode($string, 1);
+        return $first[0] . $this->substr_unicode($string, 1);
     }
 
     /**
      * Returns a formatted string for folder or file path (spaces only).
      *
      * @internal The string should be already sanitized.
-     * @see ArchiveRepertoryPlugin::_convertFilenameTo()
+     * @see ArchiveRepertoryPlugin::convertFilenameTo()
      *
      * @param string $string The string to sanitize.
      * @return string The sanitized string.
      */
-    private function _convertSpacesToUnderscore($string)
+    private function convertSpacesToUnderscore($string)
     {
         return preg_replace('/\s+/', '_', $string);
     }
@@ -1029,7 +1037,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param int $length (optional)
      * @return string
      */
-    protected function _substr_unicode($string, $start, $length = null)
+    protected function substr_unicode($string, $start, $length = null)
     {
         return join('', array_slice(
             preg_split("//u", $string, -1, PREG_SPLIT_NO_EMPTY), $start, $length));
@@ -1044,7 +1052,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @return array of issues.
      */
-    protected function _checkUnicodeInstallation()
+    protected function checkUnicodeInstallation()
     {
         $result = array();
 

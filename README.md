@@ -51,6 +51,11 @@ Then install it like any other Omeka plugin and follow the config instructions.
 
 See below to configure the protection of files.
 
+Tiles for big images created with the plugin [OpenLayers Zoom] are compatible
+with plugin. To enable it, just open and submit the config page of the plugin
+OpenLayers Zoom, the integration between the two plugins will be registered
+automatically.
+
 
 Unicode filenames
 -----------------
@@ -178,6 +183,7 @@ Copyright
 [Omeka S]: https://omeka.org/s
 [Upgrade to Omeka S]: https://github.com/Daniel-KM/UpgradeToOmekaS
 [Archive Repertory for Omeka S]: https://github.com/Daniel-KM/Omeka-S-module-ArchiveRepertory
+[OpenLayers Zoom]: https://github.com/Daniel-KM/OpenLayersZoom
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
