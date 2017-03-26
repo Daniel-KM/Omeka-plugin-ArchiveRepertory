@@ -192,42 +192,38 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $item = $args['record'];
 
-        // Check if file is at the right place, with collection and item folders.
-        $archiveFolder = $this->_getArchiveFolderName($item);
-
         // Check if files are already attached and if they are at the right place.
         $files = $item->getFiles();
         foreach ($files as $file) {
             // Move file only if it is not in the right place.
-            // We don't use original filename here, because this is managed in
-            // hookAfterSaveFile() when the file is inserted. Here, the filename
-            // is already sanitized.
-            $newFilename = $this->concatWithSeparator($archiveFolder, basename_special($file->filename));
-
-            if ($file->filename != $newFilename) {
-                // Check if the original file exists, else this is an undetected
-                // error during the convert process.
-                $path = $this->_getFullArchivePath('original');
-                if (!file_exists($this->concatWithSeparator($path, $file->filename))) {
-                    $msg = __('File "%s" [%s] is not present in the original directory.', $file->filename, $file->original_filename);
-                    $msg .= ' ' . __('There was an undetected error before storage, probably during the convert process.');
-                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
-                }
-
-                $result = $this->_moveFilesInArchiveSubfolders(
-                    $file->filename,
-                    $newFilename,
-                    $this->_getDerivativeExtension($file));
-                if (!$result) {
-                    $msg = __('Cannot move files inside archive directory.');
-                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
-                }
-
-                // Update file in Omeka database immediately for each file.
-                $file->filename = $newFilename;
-                // As it's not a file hook, the file is not automatically saved.
-                $file->save();
+            $storageId = $this->getStorageId($file);
+            if ($storageId == $file->filename) {
+                continue;
             }
+
+            // Check if the original file exists, else this is an undetected
+            // error during the convert process.
+            $path = $this->_getFullArchivePath('original');
+            if (!file_exists($this->concatWithSeparator($path, $file->filename))) {
+                $msg = __('File "%s" [%s] is not present in the original directory.', $file->filename, $file->original_filename);
+                $msg .= ' ' . __('There was an undetected error before storage, probably during the convert process.');
+                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+            }
+
+            $result = $this->_moveFilesInArchiveSubfolders(
+                $file->filename,
+                $storageId,
+                $this->_getDerivativeExtension($file));
+            if (!$result) {
+                $msg = __('Cannot move file "%s" inside archive directory.',
+                    pathinfo($file->original_filename, PATHINFO_BASENAME));
+                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+            }
+
+            // Update file in Omeka database immediately for each file.
+            $file->filename = $storageId;
+            // As it's not a file hook, the file is not automatically saved.
+            $file->save();
         }
     }
 
