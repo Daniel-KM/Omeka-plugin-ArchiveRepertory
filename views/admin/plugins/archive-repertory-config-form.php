@@ -49,7 +49,7 @@
                 // Remove the "Select Below" label.
                 unset($elementsCollection['']);
                 $elementsCollection = array(
-                    'none' => __("Don't add folder"),
+                    'none' => __('Don’t add folder'),
                     'id' => __('Internal collection id'),
                 ) + $elementsCollection;
                 echo $this->formSelect('archive_repertory_collection_folder',
@@ -60,7 +60,7 @@
                 <p class="explanation">
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each collection in "files" folders, for example "files/original/collection_identifier/".');
                     echo ' ' . __('New files will be stored inside them. Old files will be moved when collection will be updated.') . '<br />';
-                    echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
+                    echo __('Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.');
                     echo ' ' . __('So recommended ids are a specific metadata, "Dublin Core:Identifier", "Internal collection id" and eventually "Dublin Core:Title".') . '<br />';
                     echo __('If this identifier does not exists, the Omeka internal collection id will be used.'); ?>
                 </p>
@@ -122,7 +122,7 @@
                 // Remove the "Select Below" label.
                 unset($elementsItem['']);
                 $elementsItem = array(
-                    'none' => __("Don't add folder"),
+                    'none' => __('Don’t add folder'),
                     'id' => __('Internal item id'),
                 ) + $elementsItem;
                 echo $this->formSelect('archive_repertory_item_folder',
@@ -133,7 +133,7 @@
                 <p class="explanation">
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each item in "files" folders, for example "files/original/unique_identifier/".');
                     echo ' ' . __('New files will be stored inside them. Old files will be moved when item will be updated.') . '<br />';
-                    echo __("Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.");
+                    echo __('Note that if you choose a non unique name, files will be mixed in the same folder, with higher risk of name collision.');
                     echo ' ' . __('So recommended ids are a specifc metadata, "Dublin Core Identifier", "Internal item id" and eventually "Dublin Core Title".') . '<br />';
                     echo __('If this identifier does not exists, the Omeka internal item id will be used.'); ?>
                 </p>
@@ -312,7 +312,7 @@
                 ); ?>
                 <p class="explanation">
                     <?php echo __('This text will be shown beside the legal checkbox to download a file.'); ?>
-                    <?php echo ' ' . __("Let empty if you don't want to use a legal agreement."); ?>
+                    <?php echo ' ' . __('Let empty if you don’t want to use a legal agreement.'); ?>
                 </p>
             </div>
         </div>
