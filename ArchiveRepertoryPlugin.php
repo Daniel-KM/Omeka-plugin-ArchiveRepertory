@@ -206,7 +206,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 // Check if the original file exists, else this is an undetected
                 // error during the convert process.
                 $path = $this->_getFullArchivePath('original');
-                if (!file_exists($path . DIRECTORY_SEPARATOR . $file->filename)) {
+                if (!file_exists($this->concatWithSeparator($path, $file->filename))) {
                     $msg = __('File "%s" [%s] is not present in the original directory.', $file->filename, $file->original_filename);
                     $msg .= ' ' . __('There was an undetected error before storage, probably during the convert process.');
                     throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
@@ -265,7 +265,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             }
 
             // Check if main file is already in the archive folder.
-            if (!is_file($this->_getFullArchivePath('original') . DIRECTORY_SEPARATOR . $file->filename)) {
+            if (!is_file($this->concatWithSeparator($this->_getFullArchivePath('original'), $file->filename))) {
                 return;
             }
 
@@ -645,7 +645,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         if (empty($archivePaths)) {
             $storagePath = $this->_getLocalStoragePath();
             foreach (self::$_pathsByType as $name => $path) {
-                $archivePaths[$name] = $storagePath . DIRECTORY_SEPARATOR . $path;
+                $archivePaths[$name] = $this->concatWithSeparator($storagePath, $path);
             }
 
             $derivatives = explode(',', get_option('archive_repertory_derivative_folders'));
@@ -660,7 +660,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                         $this->_derivativeExtensionsByType[$name] = $extension;
                     }
                 }
-                $path = realpath($storagePath . DIRECTORY_SEPARATOR . $name);
+                $path = realpath($this->concatWithSeparator($storagePath, $name));
                 if (!empty($name) && !empty($path) && $path != '/') {
                     $archivePaths[$name] = $path;
                 } else {
@@ -690,7 +690,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 ? $this->_getFullArchivePaths()
                 : array($pathFolder);
             foreach ($folders as $path) {
-                $fullpath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
+                $fullpath = $this->concatWithSeparator($path, $archiveFolder);
                 $result = $this->_createFolder($fullpath);
             }
         }
@@ -711,13 +711,26 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 && ($archiveFolder != '')
             ) {
             foreach ($this->_getFullArchivePaths() as $path) {
-                $folderPath = $path . DIRECTORY_SEPARATOR . $archiveFolder;
+                $folderPath = $this->concatWithSeparator($path, $archiveFolder);
                 if (realpath($path) != realpath($folderPath)) {
                     $this->removeDir($folderPath);
                 }
             }
         }
         return true;
+    }
+
+    public function concatWithSeparator($firstDir, $secondDir)
+    {
+        if (empty($firstDir)) {
+            return $secondDir;
+        }
+        if (empty($secondDir)) {
+            return $firstDir;
+        }
+        $firstDir = rtrim($firstDir, DIRECTORY_SEPARATOR);
+        $secondDir = ltrim($secondDir, DIRECTORY_SEPARATOR);
+        return $firstDir . DIRECTORY_SEPARATOR . $secondDir;
     }
 
     /**
@@ -810,7 +823,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
                 // Check if the derivative file exists or not to avoid some
                 // errors when moving.
-                if (file_exists($path . DIRECTORY_SEPARATOR . $currentDerivativeFilename)) {
+                if (file_exists($this->concatWithSeparator($path, $currentDerivativeFilename))) {
                     $this->_moveFile($currentDerivativeFilename, $newDerivativeFilename, $path);
                 }
             }
@@ -834,7 +847,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _moveFile($source, $destination, $path = '')
     {
-        $realSource = $path . DIRECTORY_SEPARATOR . $source;
+        $realSource = $this->concatWithSeparator($path, $source);
         if (!file_exists($realSource)) {
             $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s"): source does not exist.',
                 $source, $destination, $path);
@@ -846,7 +859,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             switch (get_option('archive_repertory_move_process')) {
                 // Move file directly.
                 case 'direct':
-                    $realDestination = $path . DIRECTORY_SEPARATOR . $destination;
+                    $realDestination = $this->concatWithSeparator($path, $destination);
                     $result = rename($realSource, $realDestination);
                     break;
 
@@ -1003,7 +1016,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $dirname = pathinfo($filename, PATHINFO_DIRNAME);
 
         // Get the real archive path.
-        $filepath = $this->_getFullArchivePath('original') . DIRECTORY_SEPARATOR . $filename;
+        $filepath = $this->concatWithSeparator($this->_getFullArchivePath('original'), $filename);
         $folder = pathinfo($filepath, PATHINFO_DIRNAME);
         $name = pathinfo($filepath, PATHINFO_FILENAME);
         $extension = pathinfo($filepath, PATHINFO_EXTENSION);
@@ -1046,7 +1059,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         // File system check.
-        $filepath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $filename;
+        $filepath = $this->concatWithSeparator(sys_get_temp_dir(), $filename);
         if (!(touch($filepath) && file_exists($filepath))) {
             $result['fs'] = __('A file system error occurs when testing function "touch \'%s\'".', $filepath);
         }
