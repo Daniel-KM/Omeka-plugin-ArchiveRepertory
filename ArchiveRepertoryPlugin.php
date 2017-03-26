@@ -495,6 +495,53 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
+     * Checks if the folders exist in the archive repertory, then creates them.
+     *
+     * @param string $archiveFolder
+     *   Name of folder to create inside archive dir.
+     * @param string $pathFolder
+     *   (Optional) Name of folder where to create archive folder. If not set,
+     *   the archive folder will be created in all derivative paths.
+     * @return bool True if each path is created, Exception if an error occurs.
+     */
+    protected function _createArchiveFolders($archiveFolder, $pathFolder = '')
+    {
+        if ($archiveFolder != '') {
+            $folders = empty($pathFolder)
+                ? $this->_getFullArchivePaths()
+                : array($pathFolder);
+            foreach ($folders as $path) {
+                $fullpath = $this->concatWithSeparator($path, $archiveFolder);
+                $result = $this->_createFolder($fullpath);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Removes empty folders in the archive repertory.
+     *
+     * @param string $archiveFolder Name of folder to delete, without files dir.
+     * @return bool True if the path is created, Exception if an error occurs.
+     */
+    protected function _removeArchiveFolders($archiveFolder)
+    {
+        if (($archiveFolder != '.')
+            && ($archiveFolder != '..')
+            && ($archiveFolder != DIRECTORY_SEPARATOR)
+            && ($archiveFolder != '')
+        ) {
+            foreach ($this->_getFullArchivePaths() as $path) {
+                $folderPath = $this->concatWithSeparator($path, $archiveFolder);
+                if (realpath($path) != realpath($folderPath)) {
+                    $this->removeDir($folderPath);
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Creates a unique name for a record folder from first metadata.
      *
      * If there isn't any identifier with the prefix, the record id will be used.
@@ -672,53 +719,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         }
 
         return $archivePaths;
-    }
-
-    /**
-     * Checks if the folders exist in the archive repertory, then creates them.
-     *
-     * @param string $archiveFolder
-     *   Name of folder to create inside archive dir.
-     * @param string $pathFolder
-     *   (Optional) Name of folder where to create archive folder. If not set,
-     *   the archive folder will be created in all derivative paths.
-     * @return bool True if each path is created, Exception if an error occurs.
-     */
-    protected function _createArchiveFolders($archiveFolder, $pathFolder = '')
-    {
-        if ($archiveFolder != '') {
-            $folders = empty($pathFolder)
-                ? $this->_getFullArchivePaths()
-                : array($pathFolder);
-            foreach ($folders as $path) {
-                $fullpath = $this->concatWithSeparator($path, $archiveFolder);
-                $result = $this->_createFolder($fullpath);
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Removes empty folders in the archive repertory.
-     *
-     * @param string $archiveFolder Name of folder to delete, without files dir.
-     * @return bool True if the path is created, Exception if an error occurs.
-     */
-    protected function _removeArchiveFolders($archiveFolder)
-    {
-        if (($archiveFolder != '.')
-                && ($archiveFolder != '..')
-                && ($archiveFolder != DIRECTORY_SEPARATOR)
-                && ($archiveFolder != '')
-            ) {
-            foreach ($this->_getFullArchivePaths() as $path) {
-                $folderPath = $this->concatWithSeparator($path, $archiveFolder);
-                if (realpath($path) != realpath($folderPath)) {
-                    $this->removeDir($folderPath);
-                }
-            }
-        }
-        return true;
     }
 
     public function concatWithSeparator($firstDir, $secondDir)
