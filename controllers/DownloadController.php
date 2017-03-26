@@ -61,8 +61,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             $this->session->filename = $this->_filename;
             $this->session->type = $this->_type;
             $this->_helper->redirector->goto('confirm');
-        }
-        else {
+        } else {
             $this->_sendFile();
         }
     }
@@ -70,7 +69,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     /**
      * Prepare captcha.
      */
-    function confirmAction()
+    public function confirmAction()
     {
         $this->session->setExpirationHops(2);
 
@@ -103,7 +102,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     /**
      * Send file as attachment.
      */
-    function sendAction()
+    public function sendAction()
     {
         if (!$this->_checkSession()) {
             $this->_helper->flashMessenger(__('Download error: File already sent.'), 'error');
@@ -172,7 +171,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     /**
      * Check if the post is good and save results.
      *
-     * @return boolean
+     * @return bool
      */
     protected function _checkPost()
     {
@@ -213,7 +212,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      * Recheck everything for security reason. This will be done only when this
      * is sent after confirmation, as attachment.
      *
-     * @return boolean
+     * @return bool
      */
     protected function _checkSession()
     {
@@ -230,8 +229,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         foreach ($requiredKeys as $key) {
             if (!isset($this->session->$key)) {
                 return false;
-            }
-            else {
+            } else {
                 $required = '_' . $key;
                 $this->$required = $this->session->$key;
             }
@@ -357,7 +355,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     /**
      * Get and set file size. This allows to check if file really exists.
      *
-     * @return integer Length of the file.
+     * @return int Length of the file.
      */
     protected function _getFilesize()
     {
@@ -391,8 +389,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             // Check rights: if the file belongs to a public item.
             if (empty($this->_file)) {
                 $this->_file = false;
-            }
-            else {
+            } else {
                 $item = $this->_file->getItem();
                 if (empty($item)) {
                     $this->_file = false;
@@ -401,7 +398,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         }
 
         return $this->_file;
-     }
+    }
 
     /**
      * Set and get file object from the filename. Rights access are checked.
@@ -415,9 +412,8 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             if ($type == 'original') {
                 $file = $this->_getFile();
                 $this->_contentType = $file->mime_type;
-            }
-            else {
-               $this->_contentType = 'image/jpeg';
+            } else {
+                $this->_contentType = 'image/jpeg';
             }
         }
 
@@ -427,7 +423,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     /**
      * Get and set rights to direct download.
      *
-     * @return boolean False if confirmation is not needed, else true.
+     * @return bool False if confirmation is not needed, else true.
      */
     protected function _getToConfirm()
     {
@@ -527,7 +523,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      * Get and set redirect via referrer to use in case of error or in the form.
      *
      * @return string
-      */
+     */
     protected function _getSourcePage()
     {
         if (is_null($this->_sourcePage)) {
@@ -546,11 +542,9 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     {
         if ($this->_sourcePage) {
             $this->redirect($this->_sourcePage);
-        }
-        elseif ($this->session->sourcePage) {
+        } elseif ($this->session->sourcePage) {
             $this->redirect($this->session->sourcePage);
-        }
-        else {
+        } else {
             $this->redirect(WEB_ROOT);
         }
     }

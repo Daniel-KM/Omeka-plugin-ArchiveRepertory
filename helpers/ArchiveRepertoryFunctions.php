@@ -11,7 +11,8 @@
  *
  * @see http://www.php.net/manual/function.escapeshellarg.php#111919
  */
-function escapeshellarg_special($string) {
+function escapeshellarg_special($string)
+{
     return "'" . str_replace("'", "'\\''", $string) . "'";
 }
 
@@ -22,6 +23,7 @@ function escapeshellarg_special($string) {
  *
  * @return string
  */
-function basename_special($path) {
-    return preg_replace( '/^.+[\\\\\\/]/', '', $path);
+function basename_special($path)
+{
+    return preg_replace('/^.+[\\\\\\/]/', '', $path);
 }

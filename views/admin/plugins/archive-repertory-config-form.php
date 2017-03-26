@@ -13,8 +13,7 @@
     echo ' ' . __('If this is not the case, filenames should use only Ascii characters.') . '<br />';
     if (empty($allow_unicode)) {
         echo '<p>' . __('This server is compatible with Unicode.') . '</p>';
-    }
-    else {
+    } else {
         echo '<p><strong>' . __('Warning') . '</strong></p>';
         echo __('This server is not fully compatible with Unicode:') . '<br />';
         echo '<ul>';
@@ -51,7 +50,7 @@
                 unset($elementsCollection['']);
                 $elementsCollection = array(
                     'none' => __("Don't add folder"),
-                    'id' =>__('Internal collection id'),
+                    'id' => __('Internal collection id'),
                 ) + $elementsCollection;
                 echo $this->formSelect('archive_repertory_collection_folder',
                     get_option('archive_repertory_collection_folder'),
@@ -124,7 +123,7 @@
                 unset($elementsItem['']);
                 $elementsItem = array(
                     'none' => __("Don't add folder"),
-                    'id' =>__('Internal item id'),
+                    'id' => __('Internal item id'),
                 ) + $elementsItem;
                 echo $this->formSelect('archive_repertory_item_folder',
                     get_option('archive_repertory_item_folder'),

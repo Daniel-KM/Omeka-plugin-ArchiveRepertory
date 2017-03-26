@@ -336,8 +336,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param Record $record A collection or an item.
      * @param string $folder Optional. Allow to select a specific folder instead
      * of the default one.
-     * @param boolean $first Optional. Allow to return only the first value.
-     *
+     * @param bool $first Optional. Allow to return only the first value.
      * @return string|array.
      */
     protected function _getRecordIdentifiers($record, $folder = null, $first = false)
@@ -377,8 +376,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 if ($first) {
                     $select->limit(1);
                     $identifiers = $db->fetchOne($select);
-                }
-                else {
+                } else {
                     $identifiers = $db->fetchCol($select);
                 }
                 return $identifiers;
@@ -389,7 +387,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Gets archive folder name of an item, that depends on activation of options.
      *
      * @param object $item
-     *
      * @return string Unique and sanitized name folder name of the item.
      */
     protected function _getArchiveFolderName($item)
@@ -403,7 +400,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Gets collection folder name from an item.
      *
      * @param object $item
-     *
      * @return string Unique sanitized name of the collection.
      */
     protected function _getCollectionFolderName($item)
@@ -428,7 +424,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Gets item folder name from an item and create folder if needed.
      *
      * @param object $item
-     *
      * @return string Unique sanitized name of the item.
      */
     protected function _getItemFolderName($item)
@@ -454,8 +449,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
     /**
      * Prepare collection folder names.
-     *
-     * @return void.
      */
     protected function _setCollectionFolderNames()
     {
@@ -470,7 +463,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Creates the default name for a collection folder.
      *
      * @param object $collection
-     *
      * @return string Unique sanitized name of the collection.
      */
     protected function _setCollectionFolderName($collection)
@@ -509,9 +501,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * The name is sanitized and the possible prefix is removed.
      *
      * @param object $record
-     * @param integer $elementId
+     * @param int $elementId
      * @param string $prefix
-     *
      * @return string Unique sanitized name of the record.
      */
     protected function _getRecordFolderNameFromMetadata($record, $elementId, $prefix)
@@ -527,8 +518,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
     /**
      * Create collection folders if needed.
-     *
-     * @return void.
      */
     protected function _createCollectionFolders()
     {
@@ -548,8 +537,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @note Currently, Omeka API doesn't provide a function to create a folder.
      *
      * @param string $path Full path of the folder to create.
-     *
-     * @return boolean True if the path is created, Exception if an error occurs.
+     * @return bool True if the path is created, Exception if an error occurs.
      */
     protected function _createFolder($path)
     {
@@ -582,10 +570,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @note Currently, Omeka API doesn't provide a function to remove a folder.
      *
      * @param string $path Full path of the folder to remove.
-     * @param boolean $evenNonEmpty Remove non empty folder
+     * @param bool $evenNonEmpty Remove non empty folder
      *   This parameter can be used with non standard folders.
-     *
-     * @return void.
      */
     protected function _removeFolder($path, $evenNonEmpty = false)
     {
@@ -607,7 +593,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Removes directories recursively.
      *
      * @param string $dirPath Directory name.
-     * @return boolean
+     * @return bool
      */
     protected function _rrmdir($dirPath)
     {
@@ -616,8 +602,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $path = $dirPath . DIRECTORY_SEPARATOR . $file;
             if (is_dir($path)) {
                 $this->_rrmDir($path);
-            }
-            else {
+            } else {
                 unlink($path);
             }
         }
@@ -639,9 +624,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Example: 'original' can return '/var/www/omeka/files/original'.
      *
      * @param string $namePath the name of the path.
-     *
-     * @return string
-     *   Full archive path, or empty if none.
+     * @return string Full archive path, or empty if none.
      */
     protected function _getFullArchivePath($namePath)
     {
@@ -671,8 +654,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             foreach ($derivatives as $key => $value) {
                 if (strpos($value, '|') === false) {
                     $name = trim($value);
-                }
-                else {
+                } else {
                     list($name, $extension) = explode('|', $value);
                     $name = trim($name);
                     $extension = trim($extension);
@@ -683,8 +665,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $path = realpath($storagePath . DIRECTORY_SEPARATOR . $name);
                 if (!empty($name) && !empty($path) && $path != '/') {
                     $archivePaths[$name] = $path;
-                }
-                else {
+                } else {
                     unset($derivatives[$key]);
                     set_option('archive_repertory_derivative_folders', implode(', ', $derivatives));
                 }
@@ -702,9 +683,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param string $pathFolder
      *   (Optional) Name of folder where to create archive folder. If not set,
      *   the archive folder will be created in all derivative paths.
-     *
-     * @return boolean
-     *   True if each path is created, Exception if an error occurs.
+     * @return bool True if each path is created, Exception if an error occurs.
      */
     protected function _createArchiveFolders($archiveFolder, $pathFolder = '')
     {
@@ -724,8 +703,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Removes empty folders in the archive repertory.
      *
      * @param string $archiveFolder Name of folder to delete, without files dir.
-     *
-     * @return boolean True if the path is created, Exception if an error occurs.
+     * @return bool True if the path is created, Exception if an error occurs.
      */
     protected function _removeArchiveFolders($archiveFolder)
     {
@@ -751,11 +729,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      *
      * @param string $filename
      * @param string $defaultExtension
-     * @param string $derivativeType
-     *   The derivative type allows to use a non standard extension.
-     *
-     * @return string
-     *   Filename with the new extension.
+     * @param string $derivativeType The derivative type allows to use a non
+     * standard extension.
+     * @return string Filename with the new extension.
      */
     protected function _getDerivativeFilename($filename, $defaultExtension, $derivativeType = null)
     {
@@ -770,9 +746,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Get the derivative filename from a filename and an extension.
      *
      * @param object $file
-     *
-     * @return string
-     *   Extension used for derivative files (usually "jpg" for images).
+     * @return string Extension used for derivative files (usually "jpg" for
+     * images).
      */
     protected function _getDerivativeExtension($file)
     {
@@ -793,9 +768,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param optional string $derivativeExtension
      *   Extension of the derivative files to move, because it can be different
      *   from the new archive filename and it can't be determined here.
-     *
-     * @return boolean
-     *   true if files are moved, else throw Omeka_Storage_Exception.
+     * @return bool True if files are moved, else throw Omeka_Storage_Exception.
      */
     protected function _moveFilesInArchiveSubfolders($currentArchiveFilename, $newArchiveFilename, $derivativeExtension = '')
     {
@@ -859,7 +832,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param string $source
      * @param string $destination
      * @param string $path
-     * @return boolean True if success, else throw Omeka_Storage_Exception.
+     * @return bool True if success, else throw Omeka_Storage_Exception.
      */
     protected function _moveFile($source, $destination, $path = '')
     {
@@ -905,7 +878,6 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * "\" and ":" are removed (so a path should be sanitized by part).
      *
      * @param string $string The string to sanitize.
-     *
      * @return string The sanitized string.
      */
     protected function _sanitizeName($string)
@@ -925,12 +897,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @internal The string should be already sanitized.
      * The string should be a simple name, not a full path or url, because "/",
      * "\" and ":" are removed (so a path should be sanitized by part).
-     *      *
      * @see ArchiveRepertoryPlugin::_sanitizeName()
      *
      * @param string $string The string to sanitize.
      * @param string $format The format to convert to.
-     *
      * @return string The sanitized string.
      */
     protected function _convertFilenameTo($string, $format)
@@ -955,11 +925,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Returns an unaccentued string for folder or file name.
      *
      * @internal The string should be already sanitized.
-     *
      * @see ArchiveRepertoryPlugin::_convertFilenameTo()
      *
      * @param string $string The string to convert to ascii.
-     *
      * @return string The converted string to use as a folder or a file name.
      */
     private function _convertNameToAscii($string)
@@ -976,11 +944,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Returns a formatted string for folder or file path (first letter only).
      *
      * @internal The string should be already sanitized.
-     *
      * @see ArchiveRepertoryPlugin::_convertFilenameTo()
      *
      * @param string $string The string to sanitize.
-     *
      * @return string The sanitized string.
      */
     private function _convertFirstLetterToAscii($string)
@@ -996,11 +962,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * Returns a formatted string for folder or file path (spaces only).
      *
      * @internal The string should be already sanitized.
-     *
      * @see ArchiveRepertoryPlugin::_convertFilenameTo()
      *
      * @param string $string The string to sanitize.
-     *
      * @return string The sanitized string.
      */
     private function _convertSpacesToUnderscore($string)
@@ -1014,9 +978,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @see http://www.php.net/manual/en/function.mb-substr.php#107698
      *
      * @param string $string
-     * @param integer $start
-     * @param integer $length (optional)
-     *
+     * @param int $start
+     * @param int $length (optional)
      * @return string
      */
     protected function _substr_unicode($string, $start, $length = null)
@@ -1034,9 +997,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @internal No check via database, because the file can be unsaved yet.
      *
      * @param string $filename
-     *
-     * @return string
-     * The unique filename, that can be the same as input name.
+     * @return string The unique filename, that can be the same as input name.
      */
     protected function _checkExistingFile($filename)
     {
