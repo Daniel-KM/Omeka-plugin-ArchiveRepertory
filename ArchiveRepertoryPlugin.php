@@ -808,6 +808,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Move file only if it is not in the right place.
         // If the main file is at the right place, this is always the case for
         // the derivatives.
+        $newArchiveFilename = str_replace('//', '/', $newArchiveFilename);
         if ($currentArchiveFilename == $newArchiveFilename) {
             return true;
         }
@@ -822,11 +823,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // If any, move derivative files using Omeka API.
         if ($derivativeExtension != '') {
-            foreach ($this->_getFullArchivePaths() as $derivativeType => $path) {
-                // Original is managed above.
-                if ($derivativeType == 'original') {
-                    continue;
-                }
+            $derivatives = $this->_getFullArchivePaths();
+            // Original is managed above.
+            unset($derivatives['original']);
+            foreach ($derivatives as $type => $path) {
                 // We create a folder in any case, even if there isn't any file
                 // inside, in order to be fully compatible with any plugin that
                 // manages base filename only.
@@ -834,8 +834,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
                 // Determine the current and new derivative filename, standard
                 // or not.
-                $currentDerivativeFilename = $this->_getDerivativeFilename($currentArchiveFilename, $derivativeExtension, $derivativeType);
-                $newDerivativeFilename = $this->_getDerivativeFilename($newArchiveFilename, $derivativeExtension, $derivativeType);
+                $currentDerivativeFilename = $this->_getDerivativeFilename($currentArchiveFilename, $derivativeExtension, $type);
+                $newDerivativeFilename = $this->_getDerivativeFilename($newArchiveFilename, $derivativeExtension, $type);
 
                 // Check if the derivative file exists or not to avoid some
                 // errors when moving.
