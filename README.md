@@ -11,6 +11,9 @@ against hotlinking and bandwidth theft can be set via htaccess.
 
 See the example of the digitized heritage of the library of [Mines ParisTech].
 
+This plugin is upgradable to [Omeka S] via the plugin [Upgrade to Omeka S], that
+installs the module [Archive Repertory for Omeka S].
+
 
 Notes
 -----
@@ -52,8 +55,8 @@ See below to configure the protection of files.
 Unicode filenames
 -----------------
 
-As Omeka, the plugin works perfectly with filenames with Unicode characters, but
-all the system, database, filesystem and php web/cli environment on the server
+As Omeka, the plugin works fine with filenames with Unicode characters, but all
+the system, database, filesystem and php web/cli environment on the server
 should be set according to this format.
 
 An autocheck is done in the config page. You can check it too when you upload a
@@ -167,11 +170,14 @@ Copyright
 * Copyright Daniel Berthereau, 2012-2016
 
 
-[Omeka]: https://omeka.org
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
+[Omeka]: https://omeka.org
 [Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/issues
 [Clean Url]: https://github.com/Daniel-KM/CleanUrl
 [Stats]: https://github.com/Daniel-KM/Stats
+[Omeka S]: https://omeka.org/s
+[Upgrade to Omeka S]: https://github.com/Daniel-KM/UpgradeToOmekaS
+[Archive Repertory for Omeka S]: https://github.com/Daniel-KM/Omeka-S-module-ArchiveRepertory
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
