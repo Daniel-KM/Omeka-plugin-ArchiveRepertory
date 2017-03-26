@@ -541,26 +541,29 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _createFolder($path)
     {
-        if ($path != '') {
-            if (file_exists($path)) {
-                if (is_dir($path)) {
-                    @chmod($path, 0755);
-                    if (is_writable($path)) {
-                        return true;
-                    }
-                    $msg = __('Error directory non writable: "%s".', $path);
-                    throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
-                }
-                $msg = __('Failed to create folder "%s": a file with the same name exists...', $path);
-                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
-            }
-
-            if (!@mkdir($path, 0755, true)) {
-                $msg = __('Error making directory: "%s".', $path);
-                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
-            }
-            @chmod($path, 0755);
+        if ($path == '') {
+            return true;
         }
+
+        if (file_exists($path)) {
+            if (is_dir($path)) {
+                @chmod($path, 0755);
+                if (is_writable($path)) {
+                    return true;
+                }
+                $msg = __('Error directory non writable: "%s".', $path);
+                throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+            }
+            $msg = __('Failed to create folder "%s": a file with the same name exists...', $path);
+            throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+        }
+
+        if (!@mkdir($path, 0755, true)) {
+            $msg = __('Error making directory: "%s".', $path);
+            throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
+        }
+        @chmod($path, 0755);
+
         return true;
     }
 
@@ -617,19 +620,17 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     }
 
     /**
-     * Get the archive folder from a name path
+     * Get the archive folder from a type.
      *
-     * Example: 'original' can return '/var/www/omeka/files/original'.
+     * @example "original" returns "/var/www/omeka/files/original".
      *
-     * @param string $namePath the name of the path.
+     * @param string $type
      * @return string Full archive path, or empty if none.
      */
-    protected function _getFullArchivePath($namePath)
+    protected function _getFullArchivePath($type)
     {
         $archivePaths = $this->_getFullArchivePaths();
-        return isset($archivePaths[$namePath])
-             ? $archivePaths[$namePath]
-             : '';
+        return isset($archivePaths[$type]) ? $archivePaths[$type] : '';
     }
 
     /**
@@ -843,7 +844,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param string $source
      * @param string $destination
      * @param string $path
-     * @return bool True if success, else throw Omeka_Storage_Exception.
+     * @return bool
+     * @throws Omeka_Storage_Exception
      */
     protected function _moveFile($source, $destination, $path = '')
     {
@@ -854,7 +856,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
 
-        $result = null;
+        $result = false;
         try {
             switch (get_option('archive_repertory_move_process')) {
                 // Move file directly.
@@ -1023,9 +1025,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Check folder for file with any extension or without any extension.
         $checkName = $name;
-        $i = 1;
+        $i = 0;
         while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
-            $checkName = $name . '.' . $i++;
+            $checkName = $name . '.' . ++$i;
         }
 
         return ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
