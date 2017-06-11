@@ -312,9 +312,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Get the full storage id of a file according to current settings.
      *
-     * @internal The directory separator is always "/" to simplify management
-     * of files and checks.
-     * @internal Unlike Omeka S, the storage id includes the extension.
+     * Note: The directory separator is always "/" to simplify management of
+     * files and checks.
+     * Note: Unlike Omeka S, the storage id includes the extension.
      *
      * @param File $file
      * @return string
@@ -342,7 +342,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Process the check of the storage name to get the storage id.
         $storageName = $this->concatWithSeparator($folderName, $storageName);
-        $storageName = $this->getSingleFilename($storageName);
+        $storageName = $this->getSingleFilename($storageName, $file->filename);
 
         if (strlen($storageName) > 190) {
             $msg = __('Cannot move file "%s" inside archive directory: filename too long.',
@@ -553,29 +553,49 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Check if a file is a duplicate and returns it with a suffix if needed.
      *
-     * @internal The check is done on the basename, without extension, to avoid
-     * issues with derivatives.
-     * @internal No check via database, because the file can be unsaved yet.
+     * Note: The check is done on the basename, without extension, to avoid
+     * issues with derivatives and because the table uses the basename too.
+     * No check via database, because the file can be unsaved yet.
      *
      * @param string $filename
+     * @param string $currentFilename It avoids to change when it is single.
      * @return string The unique filename, that can be the same as input name.
      */
-    protected function getSingleFilename($filename)
+    protected function getSingleFilename($filename, $currentFilename)
     {
         // Get the partial path.
         $dirname = pathinfo($filename, PATHINFO_DIRNAME);
 
         // Get the real archive path.
-        $filepath = $this->concatWithSeparator($this->getFullArchivePath('original'), $filename);
+        $fullOriginalPath = $this->getFullArchivePath('original');
+        $filepath = $this->concatWithSeparator($fullOriginalPath, $filename);
         $folder = pathinfo($filepath, PATHINFO_DIRNAME);
         $name = pathinfo($filepath, PATHINFO_FILENAME);
         $extension = pathinfo($filepath, PATHINFO_EXTENSION);
+        $currentFilepath = $this->concatWithSeparator($fullOriginalPath, $currentFilename);
 
-        // Check folder for file with any extension or without any extension.
+        // Check the name.
         $checkName = $name;
-        $i = 0;
-        while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
-            $checkName = $name . '.' . ++$i;
+        $existingFilepaths = glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE);
+
+        // Check if the filename exists.
+        if (empty($existingFilepaths)) {
+            // Nothing to do.
+        }
+        // There are filenames, so check if the current one is inside.
+        elseif (in_array($currentFilepath, $existingFilepaths)) {
+            // Keep the existing one if there are many filepaths, but use the
+            // default one if it is unique.
+            if (count($existingFilepaths) > 1) {
+                $checkName = pathinfo($currentFilename, PATHINFO_FILENAME);
+            }
+        }
+        // Check folder for file with any extension or without any extension.
+        else {
+            $i = 0;
+            while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
+                $checkName = $name . '.' . ++$i;
+            }
         }
 
         $result = ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
@@ -729,7 +749,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Hash a stable single storage name for a specific file.
      *
-     * @internal We cannot use a random name.
+     * Note: A random name is not used to avoid possible issues when the option
+     * changes.
      * @see Omeka_Filter_Filename::renameFile()
      *
      * @param File $file
@@ -764,7 +785,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Returns a formatted string for folder or file name.
      *
-     * @internal The string should be already sanitized.
+     * Note: The string should be already sanitized.
      * The string should be a simple name, not a full path or url, because "/",
      * "\" and ":" are removed (so a path should be sanitized by part).
      *
@@ -795,7 +816,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Returns an unaccentued string for folder or file name.
      *
-     * @internal The string should be already sanitized.
+     * Note: The string should be already sanitized.
      *
      * @see ArchiveRepertoryPlugin::convertFilenameTo()
      *
@@ -815,7 +836,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Returns a formatted string for folder or file path (first letter only).
      *
-     * @internal The string should be already sanitized.
+     * Note: The string should be already sanitized.
      *
      * @see ArchiveRepertoryPlugin::convertFilenameTo()
      *
@@ -834,7 +855,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Returns a formatted string for folder or file path (spaces only).
      *
-     * @internal The string should be already sanitized.
+     * Note: The string should be already sanitized.
      *
      * @see ArchiveRepertoryPlugin::convertFilenameTo()
      *
