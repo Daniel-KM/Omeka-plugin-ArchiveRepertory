@@ -488,8 +488,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // is no item folder).
             if (realpath($path) != realpath($folderPath)) {
                 // Check if there is an empty directory and remove it only in
-                // that case. The directory may be not empty in multiple case,
-                // for example when the config change or when there is a
+                // that case. The directory may be not empty in multiple cases,
+                // for example when the config changes or when there is a
                 // duplicate name.
                 $this->removeDir($folderPath, false);
             }
@@ -598,7 +598,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             }
         }
 
-        $result = ($dirname ? $dirname . DIRECTORY_SEPARATOR : '')
+        $result = ($dirname && $dirname !== '.' ? $dirname . DIRECTORY_SEPARATOR : '')
             . $checkName
             . ($extension ? '.' . $extension : '');
         return $result;
@@ -610,8 +610,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @param Record $record
      * @return string Unique sanitized name of the record.
      */
-    protected function getRecordFolderName(Omeka_Record_AbstractRecord $record)
+    protected function getRecordFolderName(Omeka_Record_AbstractRecord $record = null)
     {
+        // This check allows to make Archive Repertory compatible with Admin Images.
+        if (is_null($record)) {
+            return '';
+        }
+
         $recordType = get_class($record);
         switch ($recordType) {
             case 'Collection':
@@ -891,6 +896,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
     /**
      * Get the local storage path (by default FILES_DIR).
+     *
+     * @return string
      */
     protected function _getLocalStoragePath()
     {

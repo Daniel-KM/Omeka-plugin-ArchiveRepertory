@@ -102,6 +102,7 @@ folder or in the "files/original" folder:
 ```
 Options +FollowSymlinks
 RewriteEngine on
+
 RewriteRule ^files/original/(.*)$ http://www.example.com/archive-repertory/download/files/original/$1 [NC,L]
 ```
 
@@ -172,7 +173,7 @@ The upgrade for Omeka 2.0 has been built for [Mines ParisTech].
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2012-2016
+* Copyright Daniel Berthereau, 2012-2017
 
 
 [Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
