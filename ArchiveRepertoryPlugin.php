@@ -462,7 +462,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Get the derivative filename from a filename and an extension.
      *
-     * @param object $file
+     * @param File $file
      * @return string Extension used for derivative files (usually "jpg" for
      * images).
      */
@@ -607,7 +607,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Gets record folder name from a record and create folder if needed.
      *
-     * @param Record $record
+     * @param Omeka_Record_AbstractRecord $record
      * @return string Unique sanitized name of the record.
      */
     protected function getRecordFolderName(Omeka_Record_AbstractRecord $record = null)
@@ -654,7 +654,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Gets archive folder name of an item, that depends on activation of options.
      *
-     * @param object $item
+     * @param Item $item
      * @return string Unique and sanitized name folder name of the item.
      */
     protected function _getArchiveFolderName($item)
@@ -667,7 +667,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Gets collection folder name from an item.
      *
-     * @param object $item
+     * @param Item $item
      * @return string Unique sanitized name of the collection.
      */
     protected function _getCollectionFolderName($item)
@@ -703,7 +703,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Creates the default name for a collection folder.
      *
-     * @param object $collection
+     * @param Collection $collection
      */
     protected function _setCollectionFolderName($collection)
     {
@@ -725,7 +725,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     /**
      * Gets first identifier of a record.
      *
-     * @param Record $record A collection or an item.
+     * @param Omeka_Record_AbstractRecord $record A collection or an item.
      * @param string $elementId
      * @param string $prefix
      * @return string
