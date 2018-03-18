@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 if [ -z $OMEKA_BRANCH ]; then
-  OMEKA_BRANCH=stable-2.5
+  OMEKA_BRANCH=stable-2.6
 fi
 
 export PLUGIN_DIR=`pwd`

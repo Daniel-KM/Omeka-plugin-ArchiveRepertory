@@ -306,7 +306,10 @@
         </div>
     </div>
 </fieldset>
-<?php echo js_tag('vendor/tiny_mce/tiny_mce'); ?>
+<?php
+$isOmekaBefore26 = version_compare(OMEKA_VERSION, '2.6', '<');
+echo $isOmekaBefore26 ? js_tag('vendor/tiny_mce/tiny_mce') : js_tag('vendor/tinymce/tinymce.min');
+?>
 <script type="text/javascript">
     var dropCollection = document.getElementById("archive_repertory_collection_folder");
     var fieldCollectionPrefix = document.getElementById("collection-prefix");
@@ -337,11 +340,18 @@
     jQuery(document).ready(function () {
         dropCollection.onclick();
         dropItem.onclick();
+        <?php if (!$isOmekaBefore26): ?>
+        Omeka.wysiwyg({
+            selector: '.html-editor'
+        });
+        <?php endif; ?>
     });
+    <?php if ($isOmekaBefore26): ?>
     jQuery(window).load(function () {
-      Omeka.wysiwyg({
-        mode: 'specific_textareas',
-        editor_selector: 'html-editor'
-      });
+        Omeka.wysiwyg({
+            mode: 'specific_textareas',
+            editor_selector: 'html-editor'
+        });
     });
+    <?php endif; ?>
 </script>

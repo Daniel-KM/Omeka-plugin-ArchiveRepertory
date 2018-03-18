@@ -4,7 +4,7 @@
  *
  * Keeps original names of files and put them in a hierarchical structure.
  *
- * @copyright Copyright Daniel Berthereau, 2012-2017
+ * @copyright Copyright Daniel Berthereau, 2012-2018
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  * @package ArchiveRepertory
  */
