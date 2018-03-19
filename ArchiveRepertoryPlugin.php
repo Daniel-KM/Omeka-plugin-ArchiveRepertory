@@ -953,7 +953,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $msg = __('Error directory non writable: "%s".', $path);
                 throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
             }
-            $msg = __('Failed to create folder "%s": a file with the same name exists...', $path);
+            $msg = __('Failed to create folder "%s": a file with the same name exists…', $path);
             throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
 
