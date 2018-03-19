@@ -1,6 +1,6 @@
 <?php
     echo __('"Archive Repertory" plugin allows to save files in a hierarchical structure and to keep original name of files.') . '<br />';
-    echo __('See %s for more information.', '<a href="https://github.com/Daniel-KM/ArchiveRepertory">ReadMe</a>') . '<br />';
+    echo __('See %s for more information.', '<a href="https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory">ReadMe</a>') . '<br />';
     echo '<br />';
     echo __('When all options are set, files will be saved in "files / original / my_collection / item_identifier / original_filename.ext" instead of "files / original / hashed_filename.ext".') . '<br />';
     echo '<p><strong>' . __('Warning') . '</strong></p>';

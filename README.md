@@ -176,15 +176,15 @@ Copyright
 * Copyright Daniel Berthereau, 2012-2018
 
 
-[Archive Repertory]: https://github.com/Daniel-KM/ArchiveRepertory
+[Archive Repertory]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory
 [Omeka]: https://omeka.org
-[Archive Repertory issues]: https://github.com/Daniel-KM/ArchiveRepertory/issues
-[Clean Url]: https://github.com/Daniel-KM/CleanUrl
-[Stats]: https://github.com/Daniel-KM/Stats
+[Archive Repertory issues]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory/issues
+[Clean Url]: https://github.com/Daniel-KM/Omeka-plugin-CleanUrl
+[Stats]: https://github.com/Daniel-KM/Omeka-plugin-Stats
 [Omeka S]: https://omeka.org/s
-[Upgrade to Omeka S]: https://github.com/Daniel-KM/UpgradeToOmekaS
+[Upgrade to Omeka S]: https://github.com/Daniel-KM/Omeka-plugin-UpgradeToOmekaS
 [Archive Repertory for Omeka S]: https://github.com/Daniel-KM/Omeka-S-module-ArchiveRepertory
-[OpenLayers Zoom]: https://github.com/Daniel-KM/OpenLayersZoom
+[OpenLayers Zoom]: https://github.com/Daniel-KM/Omeka-plugin-OpenLayersZoom
 [CeCILL v2.1]: https://www.cecill.info/licences/Licence_CeCILL_V2.1-en.html
 [GNU/GPL]: https://www.gnu.org/licenses/gpl-3.0.html
 [FSF]: https://www.fsf.org
