@@ -75,17 +75,21 @@ images or to get mime type from files. After, you have five possibilities:
 - use only folder and file names with standard Ascii characters;
 - set options to auto convert files and folders names to Ascii;
 - change the configuration of the server if you have access to it
-    To change an Apache server configuration, simply uncomment a line in the
-    file "envvars" in order to use the system default locale, and add this
-    just below to avoid numerical issues:
-    `export LC_NUMERIC=C`
+    To change an Apache server configuration, simply update config in the file
+    "/etc/apache2/envvars", either:
+    - uncomment the line `. /etc/default/locale` in order to use the system
+    default locale, and add this just below to avoid numerical issues: `export LC_NUMERIC=C`.
+    - or replace "export LANG=C" by "export LANG="C.UTF-8".
 - add this in the beginning the "bootstrap.php" of Omeka (with your locale):
     `setlocale(LC_CTYPE, 'fr_FR.UTF-8');`
     `setlocale(LC_COLLATE, 'fr_FR.UTF-8');`
     Avoid `setlocale(LC_ALL, 'fr_FR.UTF-8')`, and keep numerical values as "C":
     `setlocale(LC_NUMERIC, 'C');`
+    Else, you can use a more generic solution: `setlocale(LC_ALL, 'C.UTF-8');`
 - replace every `escapeshellarg()` (present in eight files in Omeka core) with
-`escapeshellarg_special()` and every `basename()` with `basename_special()`.
+  `escapeshellarg_special()` and every `basename()` with `basename_special()`.
+
+For more explanation, try the [test file].
 
 
 Protecting your files
@@ -178,6 +182,7 @@ Copyright
 
 [Archive Repertory]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory
 [Omeka]: https://omeka.org
+[test file]: https://gist.github.com/Daniel-KM/9754f18f9632423fb1a08909e9f01c04
 [Archive Repertory issues]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory/issues
 [Clean Url]: https://github.com/Daniel-KM/Omeka-plugin-CleanUrl
 [Stats]: https://github.com/Daniel-KM/Omeka-plugin-Stats
