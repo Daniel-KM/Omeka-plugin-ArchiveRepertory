@@ -946,7 +946,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         if (file_exists($path)) {
             if (is_dir($path)) {
-                @chmod($path, 0755);
+                @chmod($path, 0775);
                 if (is_writable($path)) {
                     return true;
                 }
@@ -957,11 +957,11 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
 
-        if (!@mkdir($path, 0755, true)) {
+        if (!@mkdir($path, 0775, true)) {
             $msg = __('Error making directory: "%s".', $path);
             throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
-        @chmod($path, 0755);
+        @chmod($path, 0775);
 
         return true;
     }
