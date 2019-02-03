@@ -341,7 +341,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         if (is_null($this->_filepath)) {
             $filename = $this->_getFilename();
             $storage = $this->_getStorage();
-            $storagePath = FILES_DIR . DIRECTORY_SEPARATOR . $this->_storage . DIRECTORY_SEPARATOR;
+            $storagePath = FILES_DIR . DIRECTORY_SEPARATOR . $storage . DIRECTORY_SEPARATOR;
             $filepath = realpath($storagePath . $filename);
             if (strpos($filepath, $storagePath) !== 0) {
                 return false;
@@ -435,7 +435,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             // Check for captcha;
             else {
                 $filesize = $this->_getFilesize();
-                $this->_toConfirm = ($filesize > (integer) get_option('archive_repertory_download_max_free_download'));
+                $this->_toConfirm = ($filesize > (int) get_option('archive_repertory_download_max_free_download'));
             }
         }
 
@@ -468,7 +468,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
 
                 case 'size':
                     $filesize = $this->_getFilesize();
-                    $this->_mode = ($filesize > (integer) get_option('archive_repertory_download_max_free_download'))
+                    $this->_mode = ($filesize > (int) get_option('archive_repertory_download_max_free_download'))
                         ? 'attachment'
                         : 'inline';
                     break;
@@ -484,7 +484,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
                     $filesize = $this->_getFilesize();
                     $contentType = $this->_getContentType();
                     $this->_mode = (strpos($contentType, 'image') === false
-                            || $filesize > (integer) get_option('archive_repertory_download_max_free_download'))
+                            || $filesize > (int) get_option('archive_repertory_download_max_free_download'))
                         ? 'attachment'
                         : 'inline';
                     break;

@@ -217,7 +217,7 @@
         </div>
         <div class="inputs five columns omega">
             <?php echo $this->formCheckbox('archive_repertory_file_base_original_name', true,
-                array('checked' => (boolean) get_option('archive_repertory_file_base_original_name'))); ?>
+                array('checked' => (bool) get_option('archive_repertory_file_base_original_name'))); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep only the base of original filenames in metadata, not their path or url. This option is independant from previous ones.') . '<br />'; ?>
             </p>
