@@ -107,6 +107,7 @@ folder or in the "files/original" folder:
 Options +FollowSymlinks
 RewriteEngine on
 
+# In some cases, the flag [R] may be needed too.
 RewriteRule ^files/original/(.*)$ http://www.example.com/archive-repertory/download/files/original/$1 [NC,L]
 ```
 
