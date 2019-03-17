@@ -343,6 +343,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Process the check of the storage name to get the storage id.
         $storageName = $this->concatWithSeparator($folderName, $storageName);
         $storageName = $this->getSingleFilename($storageName, $file->filename);
+        // May be needed in some installations.
+        $storageName = ltrim($storageName, './');
 
         if (strlen($storageName) > 190) {
             $msg = __('Cannot move file "%s" inside archive directory: filename too long.',
