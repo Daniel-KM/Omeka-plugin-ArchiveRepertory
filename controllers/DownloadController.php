@@ -39,7 +39,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     }
 
     /**
-     * Check if a file can be deliver in order to avoid bandwidth theft.
+     * Check if a file can be delivered in order to avoid bandwidth theft.
      */
     public function filesAction()
     {
@@ -56,7 +56,14 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         }
 
         // File is good.
-        if ($this->_getToConfirm()) {
+
+        // Plugin AdminImage uses the same folders than standards files, but
+        // should not be checked.
+        if ($this->isAdminImage()) {
+            $this->_sendFile();
+        }
+        // Check if the user should confirm download.
+        elseif ($this->_getToConfirm()) {
             // Filepath is not saved in session for security reason.
             $this->session->filename = $this->_filename;
             $this->session->type = $this->_type;
@@ -571,5 +578,28 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
                 return (int) $size . ' ' . $unit;
             }
         }
+    }
+
+    /**
+     * Check if the file is an admin image.
+     *
+     * The file should be already checked.
+     *
+     * @return bool
+     */
+    protected function isAdminImage()
+    {
+        // The plugin is not checked: even disabled, the image should load.
+
+        $db = get_db();
+        $sql = <<<SQL
+SELECT files.id
+FROM $db->File AS files
+WHERE files.item_id = 0
+AND files.filename = ?
+LIMIT 1
+SQL;
+        $id = $db->fetchOne($sql, [$this->_filename]);
+        return (bool) $id;
     }
 }

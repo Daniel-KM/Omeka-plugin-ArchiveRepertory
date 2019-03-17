@@ -126,6 +126,8 @@ The "mode" argument in `routes.ini` allows to set the download mode:
 "inline" (default if no confirmation), "attachment" (always when a confirmation
 is needed), "size", "image" or "image-size", according to your needs.
 
+The plugin is compatible with the plugin [AdminImages].
+
 
 Warning
 -------
@@ -184,6 +186,7 @@ Copyright
 [Archive Repertory]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory
 [Omeka]: https://omeka.org
 [test file]: https://gist.github.com/Daniel-KM/9754f18f9632423fb1a08909e9f01c04
+[AdminImages]: https://github.com/UCSCLibrary/AdminImages
 [Archive Repertory issues]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory/issues
 [Clean Url]: https://github.com/Daniel-KM/Omeka-plugin-CleanUrl
 [Stats]: https://github.com/Daniel-KM/Omeka-plugin-Stats
