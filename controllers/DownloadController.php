@@ -20,12 +20,18 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     protected $_sourcePage;
     protected $_toConfirm;
 
+    // Make compatible with plugin AdminImages
+    protected $_hasPluginAdminImages;
+    protected $_isAdminImage;
+
     /**
      * Initialize the controller.
      */
     public function init()
     {
         $this->session = new Zend_Session_Namespace('DownloadFile');
+        // The files of plugin AdminImages are available even when disabled.
+        $this->_hasPluginAdminImages = file_exists(PLUGIN_DIR . '/AdminImages/AdminImagesPlugin.php');
     }
 
     /**
@@ -59,7 +65,7 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
 
         // Plugin AdminImage uses the same folders than standards files, but
         // should not be checked.
-        if ($this->isAdminImage()) {
+        if ($this->_isAdminImage) {
             $this->_sendFile();
         }
         // Check if the user should confirm download.
@@ -198,6 +204,10 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             return false;
         }
 
+        if ($this->_hasPluginAdminImages && $this->isAdminImage()) {
+            return true;
+        }
+
         if (!$this->_getFile()) {
             return false;
         }
@@ -256,6 +266,10 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
 
         if (!$this->_getFilesize()) {
             return false;
+        }
+
+        if ($this->_hasPluginAdminImages && $this->isAdminImage()) {
+            return true;
         }
 
         if (!$this->_getFile()) {
@@ -383,7 +397,8 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     {
         if (is_null($this->_file)) {
             $filename = $this->_getFilename();
-            if ($this->_getStorage() == 'original') {
+            $storage = $this->_getStorage();
+            if ($storage == 'original') {
                 $this->_file = get_db()->getTable('File')->findBySql('filename = ?', array($filename), true);
             }
            // Get a derivative: this is functional only because filenames are
@@ -396,7 +411,9 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             // Check rights: if the file belongs to a public item.
             if (empty($this->_file)) {
                 $this->_file = false;
-            } else {
+            }
+            // Check public item only if item id exists (plugin AdminImages).
+            elseif ($this->_file->item_id) {
                 $item = $this->_file->getItem();
                 if (empty($item)) {
                     $this->_file = false;
@@ -583,23 +600,54 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
     /**
      * Check if the file is an admin image.
      *
-     * The file should be already checked.
-     *
      * @return bool
      */
     protected function isAdminImage()
     {
         // The plugin is not checked: even disabled, the image should load.
+        if (!is_null($this->_isAdminImage)) {
+            return $this->_isAdminImage;
+        }
+
+        $filename = $this->_getFilename();
+        $isOriginal = $this->_getType() === 'original';
+        if ($isOriginal) {
+            $bind = array($filename);
+            $equalOrLike = '=';
+        } else {
+            $originalFilename = substr($filename, 0, strlen($filename) - strlen(File::DERIVATIVE_EXT) - 1);
+            $bind = array($originalFilename . '%');
+            $equalOrLike = 'LIKE';
+        }
 
         $db = get_db();
         $sql = <<<SQL
-SELECT files.id
+SELECT files.id, files.mime_type
 FROM $db->File AS files
 WHERE files.item_id = 0
-AND files.filename = ?
+AND files.filename $equalOrLike ?
 LIMIT 1
 SQL;
-        $id = $db->fetchOne($sql, [$this->_filename]);
-        return (bool) $id;
+        $result = $db->fetchPairs($sql, $bind);
+
+        if ($result) {
+            if ($isOriginal) {
+                $this->_contentType = reset($result);
+            } else {
+                $this->_contentType = 'image/jpeg';
+                reset($result);
+            }
+            $this->_file = [
+                'record_type' => 'File',
+                'record_id' => key($result),
+            ];
+            $this->_mode = 'inline';
+            $this->_toConfirm = false;
+            $this->_isAdminImage = true;
+        } else {
+            $this->_isAdminImage = false;
+        }
+
+        return $this->_isAdminImage;
     }
 }
