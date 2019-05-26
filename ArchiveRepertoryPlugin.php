@@ -57,6 +57,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Max download without captcha (default to 30 MB).
         'archive_repertory_download_max_free_download' => 30000000,
         'archive_repertory_legal_text' => 'I agree with terms of use.',
+        'archive_repertory_confirm_by_session' => false,
     );
 
     /**

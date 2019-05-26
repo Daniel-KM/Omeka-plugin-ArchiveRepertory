@@ -282,6 +282,19 @@
             </p>
         </div>
     </div>
+    <div class="field">
+        <div class="two columns alpha">
+            <?php echo $this->formLabel('archive_repertory_confirm_by_session',
+                __('Confirm download by session')); ?>
+        </div>
+        <div class="inputs five columns omega">
+            <?php echo $this->formCheckbox('archive_repertory_confirm_by_session', true,
+                array('checked' => (bool) get_option('archive_repertory_confirm_by_session'))); ?>
+            <p class="explanation">
+                <?php echo __('If checked, the user will not have to reconfirm agreement to terms and conditions to download any file during one day.'); ?>
+            </p>
+        </div>
+    </div>
     <div class='field'>
         <div class="two columns alpha">
             <?php echo $this->formLabel('archive_repertory_legal_text',

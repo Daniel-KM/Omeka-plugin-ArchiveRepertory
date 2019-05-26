@@ -49,6 +49,19 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
      */
     public function filesAction()
     {
+        $confirmBySession = (bool) get_option('archive_repertory_confirm_by_session');
+        if ($confirmBySession) {
+            $session = new Zend_Session_Namespace('ArchiveRepertoryDownload');
+            $lastConfirm = isset($session->last_confirm)
+                ? $session->last_confirm
+                : 0;
+            // Check if the session is less than 24h old.
+            if (($lastConfirm + 86400) > time()) {
+                $this->_sendFile();
+                return;
+            }
+        }
+
         // Prepare session (allow only one confirmation).
         $this->session->setExpirationHops(2);
 
@@ -104,6 +117,15 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         if (!$form->isValid($post)) {
             $this->_helper->flashMessenger(__('Invalid form input. Please see errors below and try again.'), 'error');
             return;
+        }
+
+        $confirmBySession = (bool) get_option('archive_repertory_confirm_by_session');
+        if ($confirmBySession) {
+            $session = new Zend_Session_Namespace('ArchiveRepertoryDownload');
+            if (!isset($session->last_confirm)) {
+                $session->setExpirationSeconds(86400);
+            }
+            $session->last_confirm = time();
         }
 
         // Reset filename and type in session, because they have been checked.
