@@ -179,7 +179,8 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             $this->view->stats()->new_hit(
                 // The redirect to is not useful, so keep original url.
                 '/files/' . $type . '/' . $filename,
-                $file);
+                $file
+            );
         }
 
         // Clears all active output buffers to avoid memory overflow.
@@ -423,8 +424,8 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
             if ($storage == 'original') {
                 $this->_file = get_db()->getTable('File')->findBySql('filename = ?', array($filename), true);
             }
-           // Get a derivative: this is functional only because filenames are
-           // hashed.
+            // Get a derivative: this is functional only because filenames are
+            // hashed.
             else {
                 $originalFilename = substr($filename, 0, strlen($filename) - strlen(File::DERIVATIVE_EXT) - 1);
                 $this->_file = get_db()->getTable('File')->findBySql('filename LIKE ?', array($originalFilename . '%'), true);
@@ -659,10 +660,10 @@ SQL;
                 $this->_contentType = 'image/jpeg';
                 reset($result);
             }
-            $this->_file = [
+            $this->_file = array(
                 'record_type' => 'File',
                 'record_id' => key($result),
-            ];
+            );
             $this->_mode = 'inline';
             $this->_toConfirm = false;
             $this->_isAdminImage = true;

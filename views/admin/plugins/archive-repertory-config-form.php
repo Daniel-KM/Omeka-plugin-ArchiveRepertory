@@ -36,8 +36,10 @@
 <fieldset id="fieldset-collections"><legend><?php echo __('Collections'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_collection_folder',
-                __('How do you want to name your collection folder, if any?')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_collection_folder',
+                __('How do you want to name your collection folder, if any?')
+            ); ?>
         </div>
         <div class="five columns omega">
             <div class="inputs">
@@ -52,10 +54,12 @@
                     '' => __('Don’t add folder'),
                     'id' => __('Internal collection id'),
                 ) + $elementsCollection;
-                echo $this->formSelect('archive_repertory_collection_folder',
+                echo $this->formSelect(
+                    'archive_repertory_collection_folder',
                     get_option('archive_repertory_collection_folder'),
                     array(),
-                    $elementsCollection);
+                    $elementsCollection
+                );
                 ?>
                 <p class="explanation">
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each collection in "files" folders, for example "files/original/collection_identifier/".');
@@ -66,8 +70,10 @@
                 </p>
             </div>
             <div id="collection-prefix" class="field">
-                <?php echo $this->formLabel('archive_repertory_collection_prefix',
-                    __('Prefix for Collection')); ?>
+                <?php echo $this->formLabel(
+                    'archive_repertory_collection_prefix',
+                    __('Prefix for Collection')
+                ); ?>
                 <div class="inputs">
                     <p class="explanation">
                         <?php echo __('Choose a prefix, for example "collection:", "record:" or "doc:", to select the appropriate metadata when they are multiple.');
@@ -77,15 +83,18 @@
                 </div>
             </div>
             <div id="collection-ascii" class="field">
-                <?php echo $this->formLabel('archive_repertory_collection_convert',
-                    __('Convert collection names')); ?>
+                <?php echo $this->formLabel(
+                    'archive_repertory_collection_convert',
+                    __('Convert collection names')
+                ); ?>
                 <div class="inputs">
                     <p class="explanation">
                         <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every folder to its Ascii equivalent (or only the first letter).');
                         echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                         ?>
                     </p>
-                    <?php echo $this->formRadio('archive_repertory_collection_convert',
+                    <?php echo $this->formRadio(
+                        'archive_repertory_collection_convert',
                         get_option('archive_repertory_collection_convert'),
                         null,
                         array(
@@ -100,7 +109,8 @@
                                 . ((isset($allow_unicode['cli']) || isset($allow_unicode['fs']))
                                     ? ' (' . __('recommended because your server is not fully compatible with Unicode') . ')'
                                     : ''),
-                        )); ?>
+                        )
+                    ); ?>
                 </div>
             </div>
         </div>
@@ -109,8 +119,10 @@
 <fieldset id="fieldset-items"><legend><?php echo __('Items'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_item_folder',
-                __('How do you want to name your item folder, if any?')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_item_folder',
+                __('How do you want to name your item folder, if any?')
+            ); ?>
         </div>
         <div class="five columns omega">
             <div class="inputs">
@@ -125,10 +137,12 @@
                     '' => __('Don’t add folder'),
                     'id' => __('Internal item id'),
                 ) + $elementsItem;
-                echo $this->formSelect('archive_repertory_item_folder',
+                echo $this->formSelect(
+                    'archive_repertory_item_folder',
                     get_option('archive_repertory_item_folder'),
                     array(),
-                    $elementsItem);
+                    $elementsItem
+                );
                 ?>
                 <p class="explanation">
                     <?php echo __('If you choose to add a folder, Omeka will add subfolders for each item in "files" folders, for example "files/original/unique_identifier/".');
@@ -139,8 +153,10 @@
                 </p>
             </div>
             <div id="item-prefix" class="field">
-                <?php echo $this->formLabel('archive_repertory_item_prefix',
-                    __('Prefix for Item')); ?>
+                <?php echo $this->formLabel(
+                        'archive_repertory_item_prefix',
+                        __('Prefix for Item')
+                    ); ?>
                 <div class="inputs">
                     <p class="explanation">
                         <?php echo __('Choose a prefix, for example "item:", "record:" or "doc:", to select the appropriate metadata when they are multiple.');
@@ -150,15 +166,18 @@
                 </div>
             </div>
             <div id="item-ascii" class="field">
-                <?php echo $this->formLabel('archive_repertory_item_convert',
-                    __('Convert folder names')); ?>
+                <?php echo $this->formLabel(
+                    'archive_repertory_item_convert',
+                    __('Convert folder names')
+                ); ?>
                 <div class="inputs">
                     <p class="explanation">
                         <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every folder to its Ascii equivalent (or only the first letter).');
                         echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
                         ?>
                     </p>
-                    <?php echo $this->formRadio('archive_repertory_item_convert',
+                    <?php echo $this->formRadio(
+                        'archive_repertory_item_convert',
                         get_option('archive_repertory_item_convert'),
                         null,
                         array(
@@ -173,7 +192,8 @@
                                 . ((isset($allow_unicode['cli']) || isset($allow_unicode['fs']))
                                     ? ' (' . __('recommended because your server is not fully compatible with Unicode') . ')'
                                     : ''),
-                        )); ?>
+                        )
+                    ); ?>
                 </div>
             </div>
         </div>
@@ -182,11 +202,14 @@
 <fieldset id="fieldset-files"><legend><?php echo __('Files'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_file_convert',
-                __('Convert filenames')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_file_convert',
+                __('Convert filenames')
+            ); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $this->formRadio('archive_repertory_file_convert',
+            <?php echo $this->formRadio(
+                'archive_repertory_file_convert',
                 get_option('archive_repertory_file_convert'),
                 null,
                 array(
@@ -202,7 +225,8 @@
                             ? ' (' . __('recommended because your server is not fully compatible with Unicode') . ')'
                             : ''),
                     'hash' => __('Hash filename (default Omeka)'),
-                )); ?>
+                )
+            ); ?>
             <p class="explanation">
                 <?php echo __('Depending on your server and your needs, to avoid some potential issues, you can choose or not to rename every file to its Ascii equivalent (or only the first letter).');
                 echo __('In all cases, names are sanitized: "/", "\", "|" and other special characters are removed.');
@@ -212,12 +236,17 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_file_base_original_name',
-                __('Keep only base of original filenames')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_file_base_original_name',
+                __('Keep only base of original filenames')
+            ); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $this->formCheckbox('archive_repertory_file_base_original_name', true,
-                array('checked' => (bool) get_option('archive_repertory_file_base_original_name'))); ?>
+            <?php echo $this->formCheckbox(
+                'archive_repertory_file_base_original_name',
+                true,
+                array('checked' => (bool) get_option('archive_repertory_file_base_original_name'))
+            ); ?>
             <p class="explanation">
                 <?php echo __('If checked, Omeka will keep only the base of original filenames in metadata, not their path or url. This option is independant from previous ones.') . '<br />'; ?>
             </p>
@@ -227,8 +256,10 @@
 <fieldset id="fieldset-derivative-folders"><legend><?php echo __('Special derivative folders'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_derivative_folders',
-                __('Other derivative folders')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_derivative_folders',
+                __('Other derivative folders')
+            ); ?>
         </div>
         <div class="inputs five columns omega">
             <?php echo $this->formText('archive_repertory_derivative_folders', get_option('archive_repertory_derivative_folders'), null); ?>
@@ -249,17 +280,21 @@
 <fieldset id="fieldset-move-process"><legend><?php echo __('Process'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_move_process',
-                __('Used process')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_move_process',
+                __('Used process')
+            ); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $this->formRadio('archive_repertory_move_process',
+            <?php echo $this->formRadio(
+                'archive_repertory_move_process',
                 get_option('archive_repertory_move_process'),
                 null,
                 array(
                     'internal' => __('Omeka internal'),
                     'direct' => __('Php directly'),
-                )); ?>
+                )
+            ); ?>
             <p class="explanation">
                 <?php echo __('By default, the process uses the default internal functions of Omeka to process files.'); ?>
                 <?php echo __('If needed, the standard functions of PHP can be used.'); ?>
@@ -270,8 +305,10 @@
 <fieldset id="fieldset-max-download"><legend><?php echo __('Maximum downloads'); ?></legend>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_download_max_free_download',
-                __('Maximum size without captcha')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_download_max_free_download',
+                __('Maximum size without captcha')
+            ); ?>
         </div>
         <div class='inputs five columns omega'>
             <?php echo $this->formText('archive_repertory_download_max_free_download', get_option('archive_repertory_download_max_free_download'), null); ?>
@@ -284,12 +321,17 @@
     </div>
     <div class="field">
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_confirm_by_session',
-                __('Confirm download by session')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_confirm_by_session',
+                __('Confirm download by session')
+            ); ?>
         </div>
         <div class="inputs five columns omega">
-            <?php echo $this->formCheckbox('archive_repertory_confirm_by_session', true,
-                array('checked' => (bool) get_option('archive_repertory_confirm_by_session'))); ?>
+            <?php echo $this->formCheckbox(
+                'archive_repertory_confirm_by_session',
+                true,
+                array('checked' => (bool) get_option('archive_repertory_confirm_by_session'))
+            ); ?>
             <p class="explanation">
                 <?php echo __('If checked, the user will not have to reconfirm agreement to terms and conditions to download any file during one day.'); ?>
             </p>
@@ -297,8 +339,10 @@
     </div>
     <div class='field'>
         <div class="two columns alpha">
-            <?php echo $this->formLabel('archive_repertory_legal_text',
-                __('Legal agreement')); ?>
+            <?php echo $this->formLabel(
+                'archive_repertory_legal_text',
+                __('Legal agreement')
+            ); ?>
         </div>
         <div class='inputs five columns omega'>
             <div class='input-block'>

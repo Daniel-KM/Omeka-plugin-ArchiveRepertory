@@ -61,7 +61,11 @@ if (version_compare($oldVersion, '2.9', '<')) {
                                     array(
                                         'text' => $identifier,
                                         'html' => false,
-                    )))));
+                                    ),
+                                ),
+                            ),
+                        )
+                    );
                 }
             }
         }
@@ -110,7 +114,8 @@ if (version_compare($oldVersion, '2.9.2', '<')) {
             default:
                 $folder = $this->_db->getTable('Element')->findByElementSetNameAndElementName(
                     trim(substr($folder, 0, strrpos($folder, ':'))),
-                    trim(substr($folder, strrpos($folder, ':') + 1)));
+                    trim(substr($folder, strrpos($folder, ':') + 1))
+                );
                 $folder = $folder ? $folder->id : 'none';
         }
         set_option($option, $folder);
@@ -128,8 +133,7 @@ if (version_compare($oldVersion, '2.14.1', '<')) {
         $value = strtolower(get_option($option));
         if ($value == 'keep name') {
             $value = 'keep';
-        }
-        elseif ($value == 'none') {
+        } elseif ($value == 'none') {
             $value = '';
         }
         set_option($option, $value);

@@ -17,7 +17,7 @@ class ArchiveRepertory_Form_Confirm extends Omeka_Form
 
         // Assume registered users are trusted and don't make them play recaptcha.
         if (!$user && get_option('recaptcha_public_key') && get_option('recaptcha_private_key')) {
-            $this->addElement('captcha', 'captcha',  array(
+            $this->addElement('captcha', 'captcha', array(
                 'class' => 'hidden',
                 'label' => __('Please verify you’re a human'),
                 'captcha' => array(

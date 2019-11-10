@@ -101,7 +101,8 @@ class ArchiveRepertory_ManageFilesTest extends ArchiveRepertory_Test_AppTestCase
             array(),
             array($elementSetName => array(
                 $elementName => array(array('text' => 'my_first_item', 'html' => false)),
-        )));
+            ))
+        );
 
         $files = $this->item->getFiles();
         foreach ($files as $key => $file) {
@@ -151,7 +152,8 @@ class ArchiveRepertory_ManageFilesTest extends ArchiveRepertory_Test_AppTestCase
             ),
             array($elementSetName => array(
                 $elementName => array(array('text' => 'my_new_item_identifier', 'html' => false)),
-        )));
+            ))
+        );
 
         $files = $this->item->getFiles();
         foreach ($files as $key => $file) {

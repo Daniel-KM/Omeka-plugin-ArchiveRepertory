@@ -8,7 +8,6 @@
  * @license http://www.cecill.info/licences/Licence_CeCILL_V2.1-en.txt
  * @package ArchiveRepertory
  */
-
 require_once dirname(__FILE__)
     . DIRECTORY_SEPARATOR . 'helpers'
     . DIRECTORY_SEPARATOR . 'ArchiveRepertoryFunctions.php';
@@ -66,7 +65,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      * @see application/models/File::_pathsByType()
      * @var array
      */
-    static private $_pathsByType = array(
+    private static $_pathsByType = array(
         'original' => 'original',
         'fullsize' => 'fullsize',
         'thumbnail' => 'thumbnails',
@@ -127,7 +126,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             array(
                 'allow_unicode' => checkUnicodeInstallation(),
                 'local_storage' => $this->_getLocalStoragePath(),
-        ));
+            )
+        );
     }
 
     /**
@@ -205,10 +205,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             $result = $this->moveFilesInArchiveFolders(
                 $file->filename,
                 $storageId,
-                $this->_getDerivativeExtension($file));
+                $this->_getDerivativeExtension($file)
+            );
             if (!$result) {
-                $msg = __('Cannot move file "%s" inside archive directory.',
-                    pathinfo($file->original_filename, PATHINFO_BASENAME));
+                $msg = __(
+                    'Cannot move file "%s" inside archive directory.',
+                    pathinfo($file->original_filename, PATHINFO_BASENAME)
+                );
                 throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
             }
 
@@ -274,10 +277,13 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                 $result = $this->moveFilesInArchiveFolders(
                     $file->filename,
                     $storageId,
-                    $this->_getDerivativeExtension($file));
+                    $this->_getDerivativeExtension($file)
+                );
                 if (!$result) {
-                    $msg = __('Cannot move file "%s" inside archive directory.',
-                        pathinfo($file->original_filename, PATHINFO_BASENAME));
+                    $msg = __(
+                        'Cannot move file "%s" inside archive directory.',
+                        pathinfo($file->original_filename, PATHINFO_BASENAME)
+                    );
                     throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
                 }
 
@@ -348,8 +354,10 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $storageName = ltrim($storageName, './');
 
         if (strlen($storageName) > 190) {
-            $msg = __('Cannot move file "%s" inside archive directory: filename too long.',
-                pathinfo($file->original_filename, PATHINFO_BASENAME));
+            $msg = __(
+                'Cannot move file "%s" inside archive directory: filename too long.',
+                pathinfo($file->original_filename, PATHINFO_BASENAME)
+            );
             throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
 
@@ -718,7 +726,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         $name = $this->getRecordFolderName($collection);
         $name = $this->convertFilenameTo(
             $name,
-            get_option('archive_repertory_collection_convert'));
+            get_option('archive_repertory_collection_convert')
+        );
 
         $collectionNames = unserialize(get_option('archive_repertory_collection_names'));
         $collectionNames[$collection->id] = $name;
@@ -982,8 +991,12 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     {
         $realSource = $this->concatWithSeparator($path, $source);
         if (!file_exists($realSource)) {
-            $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s"): source does not exist.',
-                $source, $destination, $path);
+            $msg = __(
+                'Error during move of a file from "%s" to "%s" (local dir: "%s"): source does not exist.',
+                $source,
+                $destination,
+                $path
+            );
             throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
         }
 
@@ -1007,8 +1020,12 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                     break;
             }
         } catch (Omeka_Storage_Exception $e) {
-            $msg = __('Error during move of a file from "%s" to "%s" (local dir: "%s").',
-                $source, $destination, $path);
+            $msg = __(
+                'Error during move of a file from "%s" to "%s" (local dir: "%s").',
+                $source,
+                $destination,
+                $path
+            );
             throw new Omeka_Storage_Exception($e->getMessage() . "\n" . '[ArchiveRepertory] ' . $msg);
         }
 
