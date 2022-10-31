@@ -167,11 +167,10 @@ This Agreement may be freely reproduced and published, provided it is not
 altered, and that no provisions are either added or removed herefrom.
 
 
-Contact
--------
+Copyright
+---------
 
-Current maintainers:
-* Daniel Berthereau (see [Daniel-KM] on GitHub)
+* Copyright Daniel Berthereau, 2012-2022 (see [Daniel-KM] on GitLab)
 
 First version of this plugin has been built for [École des Ponts ParisTech].
 The upgrade for Omeka 2.0 has been built for [Mines ParisTech].
@@ -180,7 +179,7 @@ The upgrade for Omeka 2.0 has been built for [Mines ParisTech].
 Copyright
 ---------
 
-* Copyright Daniel Berthereau, 2012-2018
+* Copyright Daniel Berthereau, 2012-2022
 
 
 [Archive Repertory]: https://github.com/Daniel-KM/Omeka-plugin-ArchiveRepertory
