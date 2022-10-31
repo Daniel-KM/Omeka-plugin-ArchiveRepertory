@@ -587,7 +587,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         // Check the name.
         $checkName = $name;
-        $existingFilepaths = glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE);
+        // The name should already be sanitized, but escape all glob patterns
+        // anyway, starting with "\".
+        $existingFilepaths = glob(str_replace(['\\', '[', ']', '{', '}', '?', '*'], ['\\\\', '\[', '\]', '\{', '\}', '\?', '\*'], $folder . DIRECTORY_SEPARATOR . $checkName) . '{.*,.,\,,}', GLOB_BRACE);
 
         // Check if the filename exists.
         if (empty($existingFilepaths)) {
@@ -604,7 +606,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Check folder for file with any extension or without any extension.
         else {
             $i = 0;
-            while (glob($folder . DIRECTORY_SEPARATOR . $checkName . '{.*,.,\,,}', GLOB_BRACE)) {
+            while (glob(str_replace(['\\', '[', ']', '{', '}', '?', '*'], ['\\\\', '\[', '\]', '\{', '\}', '\?', '\*'], $folder . DIRECTORY_SEPARATOR . $checkName) . '{.*,.,\,,}', GLOB_BRACE)) {
                 $checkName = $name . '.' . ++$i;
             }
         }
