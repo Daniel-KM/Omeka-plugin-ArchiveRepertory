@@ -201,7 +201,20 @@ class ArchiveRepertory_DownloadController extends Omeka_Controller_AbstractActio
         $response->setHeader('Content-Description', 'File Transfer');
         // Send headers separately to handle large files.
         $response->sendHeaders();
-        $response->setBody(readfile($filepath));
+
+        // Clears all active output buffers to avoid memory overflow.
+        $response->setBody('');
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        readfile($filepath);
+
+        // TODO Fix issue with session. See readme of module XmlViewer.
+        ini_set('display_errors', '0');
+
+        // Return response to avoid default view rendering and to manage events.
+        // TODO exit() is used for now.
+        exit();
     }
 
     /**
