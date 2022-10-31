@@ -83,13 +83,13 @@ function checkUnicodeInstallation()
 
     // First character check.
     $filename = 'éfilé.jpg';
-    if (basename($filename) != $filename) {
+    if (basename($filename) !== $filename) {
         $result['ascii'] = __('An error occurs when testing function "basename(\'%s\')".', $filename);
     }
 
     // Command line via web check (comparaison with a trivial function).
     $filename = "File~1 -À-é-ï-ô-ů-ȳ-Ø-ß-ñ-Ч-Ł-'.Test.png";
-    if (escapeshellarg($filename) != escapeshellarg_special($filename)) {
+    if (escapeshellarg($filename) !== escapeshellarg_special($filename)) {
         $result['cli'] = __('An error occurs when testing function "escapeshellarg(\'%s\')".', $filename);
     }
 
