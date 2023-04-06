@@ -53,6 +53,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // Other derivative folders.
         'archive_repertory_derivative_folders' => '',
         'archive_repertory_move_process' => 'internal',
+        // Use S3 for storage? Or use something else.
+        'archive_repertory_use_s3_file_storage' => false,
         // Max download without captcha (default to 30 MB).
         'archive_repertory_download_max_free_download' => 30000000,
         'archive_repertory_legal_text' => 'I agree with terms of use.',
@@ -196,7 +198,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             // Check if the original file exists, else this is an undetected
             // error during the convert process.
             $path = $this->getFullArchivePath('original');
-            if (!file_exists($this->concatWithSeparator($path, $file->filename))) {
+            if (!$this->fileExists($this->concatWithSeparator($path, $file->filename))) {
                 $msg = __('File "%s" [%s] is not present in the original directory.', $file->filename, $file->original_filename);
                 $msg .= ' ' . __('There was an undetected error before storage, probably during the convert process.');
                 throw new Omeka_Storage_Exception('[ArchiveRepertory] ' . $msg);
@@ -353,7 +355,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
         // May be needed in some installations.
         $storageName = ltrim($storageName, './');
 
-        if (strlen($storageName) > 190) {
+        if (($this->useS3() && (strlen($storageName) > 1024))
+          || (!$this->useS3() && (strlen($storageName) > 190))) {
             $msg = __(
                 'Cannot move file "%s" inside archive directory: filename too long.',
                 pathinfo($file->original_filename, PATHINFO_BASENAME)
@@ -436,7 +439,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
                 // Check if the derivative file exists or not to avoid some
                 // errors when moving.
-                if (file_exists($this->concatWithSeparator($path, $currentDerivativeFilename))) {
+                if ($this->fileExists($this->concatWithSeparator($path, $currentDerivativeFilename))) {
                     $this->moveFile($currentDerivativeFilename, $newDerivativeFilename, $path);
                 }
             }
@@ -915,8 +918,11 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function _getLocalStoragePath()
     {
-        $adapterOptions = Zend_Registry::get('storage')->getAdapter()->getOptions();
-        return $adapterOptions['localDir'];
+      $adapter = Zend_Registry::get('storage')->getAdapter();
+      if (method_exists($adapter,'getOptions')) {
+        $adapterOptions = $adapter->getOptions();
+      }
+      return $adapterOptions['localDir'] ?? '';
     }
 
     /**
@@ -931,16 +937,19 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function createArchiveFolders($archiveFolder, $pathFolder = '')
     {
-        if ($archiveFolder != '') {
-            $folders = empty($pathFolder)
-                ? $this->getFullArchivePaths()
-                : array($pathFolder);
-            foreach ($folders as $path) {
-                $fullpath = $this->concatWithSeparator($path, $archiveFolder);
-                $result = $this->createFolder($fullpath);
-            }
-        }
+      if ($this->useS3()) {
         return true;
+      }
+      if ($archiveFolder != '') {
+          $folders = empty($pathFolder)
+              ? $this->getFullArchivePaths()
+              : array($pathFolder);
+          foreach ($folders as $path) {
+              $fullpath = $this->concatWithSeparator($path, $archiveFolder);
+              $result = $this->createFolder($fullpath);
+          }
+      }
+      return true;
     }
 
     /**
@@ -954,6 +963,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function createFolder($path)
     {
+      if ($this->useS3()) {
+        return true;
+      }
         if ($path == '') {
             return true;
         }
@@ -992,7 +1004,7 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
     protected function moveFile($source, $destination, $path = '')
     {
         $realSource = $this->concatWithSeparator($path, $source);
-        if (!file_exists($realSource)) {
+        if (!$this->fileExists($realSource)) {
             $msg = __(
                 'Error during move of a file from "%s" to "%s" (local dir: "%s"): source does not exist.',
                 $source,
@@ -1004,7 +1016,8 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
 
         $result = false;
         try {
-            switch (get_option('archive_repertory_move_process')) {
+          $move_process = $this->useS3() ? 'internal' : get_option('archive_repertory_move_process');
+            switch ($move_process) {
                 // Move file directly.
                 case 'direct':
                     $realDestination = $this->concatWithSeparator($path, $destination);
@@ -1014,10 +1027,9 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
                     // Move the main original file using Omeka API.
                 case 'internal':
                 default:
-                    $operation = new Omeka_Storage_Adapter_Filesystem(array(
-                    'localDir' => $path,
-                    ));
-                    $operation->move($source, $destination);
+                    $adapter = Zend_Registry::get('storage')->getAdapter();
+                    $realDestination = $this->concatWithSeparator($path, $destination);
+                    $adapter->move($realSource, $realDestination);
                     $result = true;
                     break;
             }
@@ -1044,17 +1056,20 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
      */
     protected function removeDir($path, $evenNonEmpty = false)
     {
-        $path = realpath($path);
-        if (strlen($path)
-                && $path != DIRECTORY_SEPARATOR
-                && file_exists($path)
-                && is_dir($path)
-                && is_readable($path)
-                && is_writable($path)
-                && ($evenNonEmpty || count(array_diff(@scandir($path), array('.', '..'))) == 0)
-            ) {
-            return $this->recursiveRemoveDir($path);
-        }
+      if ($this->useS3()) {
+        return true;
+      }
+      $path = realpath($path);
+      if (strlen($path)
+              && $path != DIRECTORY_SEPARATOR
+              && file_exists($path)
+              && is_dir($path)
+              && is_readable($path)
+              && is_writable($path)
+              && ($evenNonEmpty || count(array_diff(@scandir($path), array('.', '..'))) == 0)
+          ) {
+          return $this->recursiveRemoveDir($path);
+      }
     }
 
     /**
@@ -1075,5 +1090,23 @@ class ArchiveRepertoryPlugin extends Omeka_Plugin_AbstractPlugin
             }
         }
         return rmdir($dirPath);
+    }
+
+    protected function fileExists($path)
+    {
+      if ($this->useS3()) {
+        $adapter = Zend_Registry::get('storage')->getAdapter();
+        if (method_exists($adapter,'isObjectAvailable')) {
+          return $adapter->isObjectAvailable($path);
+        } else {
+          throw new Omeka_Storage_Exception('Current storage adapter does not support access to S3 service');
+        }
+      }
+      return file_exists($path);
+    }
+
+    protected function useS3()
+    {
+      return get_option('archive_repertory_use_s3_file_storage');
     }
 }
