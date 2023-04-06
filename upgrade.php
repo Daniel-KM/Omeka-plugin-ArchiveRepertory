@@ -143,3 +143,7 @@ if (version_compare($oldVersion, '2.14.1', '<')) {
     }
     delete_option('archive_repertory_file_keep_original_name');
 }
+
+if (version_compare($oldVersion, '2.16.0', '<')) {
+  set_option('archive_repertory_use_s3_file_storage', false);
+}

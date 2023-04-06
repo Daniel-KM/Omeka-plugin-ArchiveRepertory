@@ -302,6 +302,27 @@
         </div>
     </div>
 </fieldset>
+<fieldset id="fieldset-s3-storage"><legend><?php echo __('Storage Adapter'); ?></legend>
+    <div class="field">
+        <div class="two columns alpha">
+            <?php echo $this->formLabel(
+                'archive_repertory_use_s3_file_storage',
+                __('Use S3 file storage?')
+            ); ?>
+        </div>
+        <div class="inputs five columns omega">
+            <?php echo $this->formCheckbox(
+                'archive_repertory_use_s3_file_storage',
+                true,
+                array('checked' => (bool) get_option('archive_repertory_use_s3_file_storage')),
+            ); ?>
+            <p class="explanation">
+                <?php echo __('If this is enabled, the archive repertory plugin will use methods that are consistent with S3 file storage conventions.'); ?>
+                <?php echo __('However, because the Zend S3 adapter currently does not support v4 authentication, you must <a href="archive_repertory_use_s3_file_storage">install this custom adapter</a>.'); ?>
+            </p>
+        </div>
+    </div>
+</fieldset>
 <fieldset id="fieldset-max-download"><legend><?php echo __('Maximum downloads'); ?></legend>
     <div class="field">
         <div class="two columns alpha">

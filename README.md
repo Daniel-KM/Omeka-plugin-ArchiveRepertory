@@ -129,6 +129,15 @@ is needed), "size", "image" or "image-size", according to your needs.
 The plugin is compatible with the plugin [AdminImages].
 
 
+S3 Support
+-------
+
+This module does support the S3 storage adapter, but only using [a fork of the custom
+AWS S3 adapter created by EHRI](https://github.com/timstallmann/omeka-amazon-s3-storage-adapter).
+
+To set up S3 storage, you'll need to [follow the instructions in this repo](https://github.com/timstallmann/omeka-amazon-s3-storage-adapter) to set up the custom
+AWS storage adapter, and then check the checkbox to "Enable S3 storage" in Archive Repertory options.
+
 Warning
 -------
 
